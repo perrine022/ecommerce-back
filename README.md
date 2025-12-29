@@ -23,8 +23,8 @@ Avant de commencer, assurez-vous d'avoir installé :
    ```properties
    # Base de données
    spring.datasource.url=jdbc:mysql://localhost:3306/tradefood
-   spring.datasource.username=VOTRE_USERNAME
-   spring.datasource.password=VOTRE_PASSWORD
+   spring.datasource.username=root
+   spring.datasource.password=password
 
    # Sellsy API
    sellsy.client-id=VOTRE_CLIENT_ID

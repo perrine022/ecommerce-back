@@ -35,8 +35,9 @@ public class ProductService {
      * @return Liste des produits.
      */
     public List<Product> getAllProducts() {
-        log.debug("Récupération de tous les produits");
-        return productRepository.findAll();
+        List<Product> products = productRepository.findAll();
+        log.info("Récupération de tous les produits : {} trouvés", products.size());
+        return products;
     }
 
     /**
