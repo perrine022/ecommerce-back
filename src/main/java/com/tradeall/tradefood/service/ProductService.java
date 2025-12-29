@@ -99,7 +99,7 @@ public class ProductService {
     @Transactional
     public void syncProducts() {
         log.info("Début de la synchronisation des produits depuis Sellsy");
-        sellsyClient.getProducts(100, 0)
+        sellsyClient.getItems(100, 0)
                 .map(response -> {
                     log.debug("Reçu {} produits de Sellsy", response.getData().size());
                     return response.getData().stream()

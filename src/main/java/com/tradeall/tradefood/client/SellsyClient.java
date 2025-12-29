@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
-
 /**
  * Client HTTP pour interagir avec l'API v2 de Sellsy.
  * Fournit des méthodes pour gérer les produits, contacts et commandes.
@@ -38,11 +36,11 @@ public class SellsyClient {
      * @param offset Décalage pour la pagination.
      * @return Un Mono contenant la réponse paginée de Sellsy.
      */
-    public Mono<SellsyResponse<SellsyProduct>> getProducts(int limit, int offset) {
-        log.debug("Appel Sellsy GET /products (limit: {}, offset: {})", limit, offset);
+    public Mono<SellsyResponse<SellsyProduct>> getItems(int limit, int offset) {
+        log.debug("Appel Sellsy GET /items (limit: {}, offset: {})", limit, offset);
         return sellsyWebClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/products")
+                        .path("/items")
                         .queryParam("limit", limit)
                         .queryParam("offset", offset)
                         .build())

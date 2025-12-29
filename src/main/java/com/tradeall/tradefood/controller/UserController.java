@@ -74,4 +74,16 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * Déclenche la synchronisation des clients depuis Sellsy.
+     * @return Réponse vide.
+     */
+    @PostMapping("/sync")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> syncUsers() {
+        log.info("Requête manuelle de synchronisation des clients Sellsy");
+        userService.syncUsers();
+        return ResponseEntity.ok().build();
+    }
 }
