@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service gérant la gestion des utilisateurs (profil, administration).
@@ -37,7 +38,7 @@ public class UserService {
      * @param id L'identifiant de l'utilisateur.
      * @return L'utilisateur trouvé.
      */
-    public User getUserById(Long id) {
+    public User getUserById(UUID id) {
         log.debug("Récupération de l'utilisateur ID: {}", id);
         return userRepository.findById(id).orElseThrow(() -> {
             log.error("Utilisateur non trouvé ID: {}", id);
@@ -51,7 +52,7 @@ public class UserService {
      * @param userDetails Les nouveaux détails.
      * @return L'utilisateur mis à jour.
      */
-    public User updateUser(Long id, User userDetails) {
+    public User updateUser(UUID id, User userDetails) {
         log.debug("Mise à jour de l'utilisateur ID: {}", id);
         User user = getUserById(id);
         user.setFirstName(userDetails.getFirstName());
@@ -64,7 +65,7 @@ public class UserService {
      * Supprime un utilisateur.
      * @param id L'identifiant de l'utilisateur.
      */
-    public void deleteUser(Long id) {
+    public void deleteUser(UUID id) {
         log.debug("Suppression de l'utilisateur ID: {}", id);
         userRepository.deleteById(id);
     }

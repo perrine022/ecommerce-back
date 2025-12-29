@@ -9,6 +9,6 @@ import java.util.UUID;
  * @author Perrine Honoré
  * @date 2025-12-29
  */
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmail(String email);
 }

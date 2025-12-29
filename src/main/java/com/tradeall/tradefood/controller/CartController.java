@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 /**
  * Contrôleur gérant le panier d'achat de l'utilisateur connecté.
@@ -46,7 +47,7 @@ public class CartController {
     @PostMapping("/add")
     public ResponseEntity<Void> addToCart(
             @AuthenticationPrincipal User user,
-            @RequestParam Long productId,
+            @RequestParam UUID productId,
             @RequestParam Integer quantity
     ) {
         log.info("Requête pour ajouter au panier - Utilisateur: {}, Produit ID: {}, Quantité: {}", user.getEmail(), productId, quantity);

@@ -83,7 +83,7 @@ public class CartService {
      * @param quantity La quantité à ajouter.
      */
     @Transactional
-    public void addToCart(User user, Long productId, Integer quantity) {
+    public void addToCart(User user, UUID productId, Integer quantity) {
         log.debug("Ajout au panier - Utilisateur: {}, Produit ID: {}, Quantité: {}", user.getEmail(), productId, quantity);
         Cart cart = getCartByUser(user);
         Product product = productRepository.findById(productId)
