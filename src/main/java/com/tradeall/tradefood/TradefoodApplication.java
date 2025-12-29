@@ -1,0 +1,17 @@
+package com.tradeall.tradefood;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+/**
+ * @author Perrine Honoré
+ * @date 2025-12-29
+ */
+@SpringBootApplication
+public class TradefoodApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(TradefoodApplication.class, args);
+    }
+
+}
