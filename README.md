@@ -1,15 +1,71 @@
 # Tradefood Backend
 
-Ce projet est le backend de l'application **Tradefood**, développé par **Perrine Honoré**. Il s'agit d'une plateforme e-commerce robuste conçue pour gérer les produits, les commandes et les clients, avec une intégration poussée vers des outils tiers.
+Ce projet est le backend de l'application **Tradefood**, développé par **Perrine Honoré**. Il s'agit d'une plateforme e-commerce robuste conçue pour gérer les produits, les commandes et les clients, avec une intégration poussée vers des outils tiers (Sellsy, Stripe).
 
-## 🚀 Fonctionnalités principales
+## 📋 Prérequis
 
-- **Gestion des utilisateurs** : Inscription, connexion et gestion sécurisée des profils (JWT).
-- **Catalogue de produits** : Gestion complète des produits.
-- **Panier d'achat** : Système de panier persistant.
-- **Gestion des commandes** : Tunnel d'achat complet.
-- **Paiements en ligne** : Intégration avec **Stripe** pour des transactions sécurisées.
-- **Synchronisation CRM** : Intégration avec **Sellsy** pour la synchronisation des contacts, produits et commandes.
+Avant de commencer, assurez-vous d'avoir installé :
+- **Java 17** ou version ultérieure
+- **Maven 3.8+**
+- **MySQL 8.0+**
+- Un compte **Sellsy** et **Stripe** pour obtenir les clés API nécessaires.
+
+## ⚙️ Configuration
+
+1. **Base de données** :
+   Créez une base de données MySQL localement :
+   ```sql
+   CREATE DATABASE tradefood;
+   ```
+
+2. **Fichier de configuration** :
+   Vérifiez et adaptez le fichier `src/main/resources/application.properties` :
+   ```properties
+   # Base de données
+   spring.datasource.url=jdbc:mysql://localhost:3306/tradefood
+   spring.datasource.username=VOTRE_USERNAME
+   spring.datasource.password=VOTRE_PASSWORD
+
+   # Sellsy API
+   sellsy.client-id=VOTRE_CLIENT_ID
+   sellsy.client-secret=VOTRE_CLIENT_SECRET
+
+   # Stripe API
+   stripe.api.key=VOTRE_STRIPE_KEY
+   stripe.webhook.secret=VOTRE_WEBHOOK_SECRET
+
+   # JWT
+   jwt.secret=VOTRE_SECRET_JWT
+   ```
+
+## 🚀 Lancement du projet
+
+Pour lancer l'application en mode développement :
+
+```bash
+# Utiliser le wrapper Maven fourni
+./mvnw spring-boot:run
+```
+
+L'application sera disponible sur `http://localhost:8080`.
+
+### Compilation et exécution du JAR
+
+```bash
+# Compiler le projet
+./mvnw clean package
+
+# Lancer l'exécutable
+java -jar target/tradefood-0.0.1-SNAPSHOT.jar
+```
+
+## 🧪 Tests
+
+Pour exécuter les tests unitaires et d'intégration :
+
+```bash
+./mvnw test
+```
 
 ## 🛠 Technologies utilisées
 
@@ -25,13 +81,15 @@ Le projet repose sur une stack moderne basée sur Java et l'écosystème Spring 
 - **Mapping** : ModelMapper
 - **Build** : Maven
 
-## ⚙️ Configuration
+## 📂 Structure du projet
 
-Le projet nécessite une configuration via le fichier `application.properties` pour les éléments suivants :
-- Connexion à la base de données MySQL.
-- Identifiants API Sellsy.
-- Clés API Stripe.
-- Secret JWT pour la signature des tokens.
+- `controller/` : Contrôleurs REST gérant les requêtes HTTP.
+- `service/` : Couche de services contenant la logique métier.
+- `entity/` : Entités JPA représentant les tables de la base de données.
+- `repository/` : Interfaces Spring Data JPA pour l'accès aux données.
+- `dto/` : Objets de transfert de données (Data Transfer Objects).
+- `config/` : Classes de configuration (Sécurité, Sellsy, etc.).
+- `security/` : Gestion de l'authentification JWT.
 
 ---
 Développé par **Perrine Honoré** pour **Tradefood**.

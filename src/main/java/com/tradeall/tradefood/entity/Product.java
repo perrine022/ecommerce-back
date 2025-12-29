@@ -12,7 +12,12 @@ import java.util.UUID;
 public class Product {
 
     @Id
-    private Long id; // Sellsy ID
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
+
+    @Column(name = "sellsy_id")
+    private Long sellsyId;
 
     @Column(name = "type")
     private String type;
@@ -82,8 +87,10 @@ public class Product {
 
     public Product() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    public Long getSellsyId() { return sellsyId; }
+    public void setSellsyId(Long sellsyId) { this.sellsyId = sellsyId; }
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
     public String getName() { return name; }
@@ -134,14 +141,16 @@ public class Product {
     }
 
     public static class ProductBuilder {
-        private Long id;
+        private UUID id;
+        private Long sellsyId;
         private String name;
         private String reference;
         private String description;
         private String referencePrice;
         private String purchaseAmount;
 
-        public ProductBuilder id(Long id) { this.id = id; return this; }
+        public ProductBuilder id(UUID id) { this.id = id; return this; }
+        public ProductBuilder sellsyId(Long sellsyId) { this.sellsyId = sellsyId; return this; }
         public ProductBuilder name(String name) { this.name = name; return this; }
         public ProductBuilder reference(String reference) { this.reference = reference; return this; }
         public ProductBuilder description(String description) { this.description = description; return this; }
@@ -151,6 +160,7 @@ public class Product {
         public Product build() {
             Product product = new Product();
             product.setId(id);
+            product.setSellsyId(sellsyId);
             product.setName(name);
             product.setReference(reference);
             product.setDescription(description);

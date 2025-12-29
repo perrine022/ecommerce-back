@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Contrôleur gérant le catalogue de produits et leur synchronisation.
@@ -41,7 +42,7 @@ public class ProductController {
      * @return Le produit trouvé.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+    public ResponseEntity<Product> getProductById(@PathVariable UUID id) {
         log.info("Requête pour récupérer le produit ID: {}", id);
         return ResponseEntity.ok(productService.getProductById(id));
     }
@@ -64,7 +65,7 @@ public class ProductController {
      * @return Le produit mis à jour.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+    public ResponseEntity<Product> updateProduct(@PathVariable UUID id, @RequestBody Product product) {
         log.info("Requête pour mettre à jour le produit ID: {}", id);
         return ResponseEntity.ok(productService.updateProduct(id, product));
     }
@@ -75,7 +76,7 @@ public class ProductController {
      * @return Réponse vide.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteProduct(@PathVariable UUID id) {
         log.info("Requête pour supprimer le produit ID: {}", id);
         productService.deleteProduct(id);
         return ResponseEntity.ok().build();

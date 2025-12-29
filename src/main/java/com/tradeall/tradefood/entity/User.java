@@ -242,12 +242,16 @@ public class User implements UserDetails {
     }
 
     public static class UserBuilder {
+        private UUID id;
+        private Long sellsyId;
         private String email;
         private String password;
         private String firstName;
         private String lastName;
         private Role role;
 
+        public UserBuilder id(UUID id) { this.id = id; return this; }
+        public UserBuilder sellsyId(Long sellsyId) { this.sellsyId = sellsyId; return this; }
         public UserBuilder email(String email) { this.email = email; return this; }
         public UserBuilder password(String password) { this.password = password; return this; }
         public UserBuilder firstName(String firstName) { this.firstName = firstName; return this; }
@@ -256,6 +260,8 @@ public class User implements UserDetails {
 
         public User build() {
             User user = new User();
+            user.setId(id);
+            user.setSellsyId(sellsyId);
             user.setEmail(email);
             user.setPassword(password);
             user.setFirstName(firstName);

@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Contrôleur gérant les utilisateurs : profil personnel et administration.
@@ -68,7 +69,7 @@ public class UserController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
         log.info("Requête Admin pour supprimer l'utilisateur ID: {}", id);
         userService.deleteUser(id);
         return ResponseEntity.ok().build();
