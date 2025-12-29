@@ -56,7 +56,6 @@ public class UserController {
      * @return Liste des utilisateurs.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<User>> getAllUsers() {
         log.info("Requête Admin pour récupérer tous les utilisateurs");
         return ResponseEntity.ok(userService.getAllUsers());
@@ -68,7 +67,6 @@ public class UserController {
      * @return Réponse vide.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
         log.info("Requête Admin pour supprimer l'utilisateur ID: {}", id);
         userService.deleteUser(id);
@@ -80,7 +78,6 @@ public class UserController {
      * @return Réponse vide.
      */
     @PostMapping("/sync")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> syncUsers() {
         log.info("Requête manuelle de synchronisation des clients Sellsy");
         userService.syncUsers();

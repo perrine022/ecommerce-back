@@ -1,0 +1,13 @@
+target/
+mvnw
+mvnw.cmd
+.mvn/
+.idea/
+.git/
+*.iml
+.DS_Store
+Dockerfile
+.dockerignore
+compilation_errors.txt
+HELP.md
+README.md
