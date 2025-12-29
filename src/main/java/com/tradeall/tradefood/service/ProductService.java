@@ -45,7 +45,7 @@ public class ProductService {
      * @return Le produit trouvé.
      * @throws RuntimeException si le produit n'est pas trouvé.
      */
-    public Product getProductById(Long id) {
+    public Product getProductById(UUID id) {
         log.debug("Récupération du produit ID: {}", id);
         return productRepository.findById(id).orElseThrow(() -> {
             log.error("Produit non trouvé ID: {}", id);
@@ -71,7 +71,7 @@ public class ProductService {
      * @return Le produit mis à jour.
      */
     @Transactional
-    public Product updateProduct(Long id, Product productDetails) {
+    public Product updateProduct(UUID id, Product productDetails) {
         log.debug("Mise à jour du produit ID: {}", id);
         Product product = getProductById(id);
         product.setName(productDetails.getName());
@@ -88,7 +88,7 @@ public class ProductService {
      * @param id L'identifiant du produit.
      */
     @Transactional
-    public void deleteProduct(Long id) {
+    public void deleteProduct(UUID id) {
         log.debug("Suppression du produit ID: {}", id);
         productRepository.deleteById(id);
     }
@@ -105,7 +105,7 @@ public class ProductService {
                     return response.getData().stream()
                         .map(sellsyProduct -> {
                             Product product = Product.builder()
-                                .id(sellsyProduct.getId())
+                                .sellsyId(sellsyProduct.getId())
                                 .name(sellsyProduct.getName())
                                 .reference(sellsyProduct.getReference())
                                 .description(sellsyProduct.getDescription())
