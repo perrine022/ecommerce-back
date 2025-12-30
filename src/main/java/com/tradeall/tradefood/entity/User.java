@@ -112,7 +112,7 @@ public class User implements UserDetails {
     @Column(name = "is_archived")
     private Boolean isArchived;
     
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_marketing_campaigns", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "campaign")
     private List<String> marketingCampaignsSubscriptions;

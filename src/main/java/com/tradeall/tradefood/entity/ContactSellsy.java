@@ -54,7 +54,7 @@ public class ContactSellsy {
     private String updated;
     private Boolean isArchived;
     
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "contact_sellsy_marketing_campaigns", joinColumns = @JoinColumn(name = "contact_id"))
     @Column(name = "campaign")
     private List<String> marketingCampaignsSubscriptions;
