@@ -120,16 +120,12 @@ public class AuthenticationService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(User.Role.ROLE_USER)
-                .sellsyType(request.getType())
+                .sellsyType("COMPANY")
                 .companyName(request.getCompanyName())
                 .build();
         
         /*
-        if ("COMPANY".equalsIgnoreCase(request.getType())) {
-            registerAsCompany(request, user);
-        } else {
-            registerAsIndividual(request, user);
-        }
+        registerAsCompany(request, user);
         */
         
         userRepository.save(user);
