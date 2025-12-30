@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS user_marketing_campaigns (
     user_id BINARY(16) NOT NULL,
-    campaign VARCHAR(255),
+    campaign VARCHAR(255) NOT NULL,
+    PRIMARY KEY (user_id, campaign),
     CONSTRAINT fk_user_campaigns FOREIGN KEY (user_id) REFERENCES users(id)
 ) ENGINE=InnoDB;
 
@@ -211,7 +212,8 @@ CREATE TABLE IF NOT EXISTS contacts_sellsy (
 
 CREATE TABLE IF NOT EXISTS contact_sellsy_marketing_campaigns (
     contact_id BINARY(16) NOT NULL,
-    campaign VARCHAR(255),
+    campaign VARCHAR(255) NOT NULL,
+    PRIMARY KEY (contact_id, campaign),
     CONSTRAINT fk_contact_campaigns FOREIGN KEY (contact_id) REFERENCES contacts_sellsy(id)
 ) ENGINE=InnoDB;
 
