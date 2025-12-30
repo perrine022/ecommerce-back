@@ -31,6 +31,8 @@ public class AuthenticationService {
 
     private final UserRepository userRepository;
     private final ContactSellsyRepository contactSellsyRepository;
+    private final com.tradeall.tradefood.repository.IndividualSellsyRepository individualSellsyRepository;
+    private final com.tradeall.tradefood.repository.CompanySellsyRepository companySellsyRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -39,6 +41,8 @@ public class AuthenticationService {
 
     public AuthenticationService(UserRepository userRepository, 
                                  ContactSellsyRepository contactSellsyRepository,
+                                 com.tradeall.tradefood.repository.IndividualSellsyRepository individualSellsyRepository,
+                                 com.tradeall.tradefood.repository.CompanySellsyRepository companySellsyRepository,
                                  PasswordEncoder passwordEncoder, 
                                  JwtService jwtService, 
                                  AuthenticationManager authenticationManager, 
@@ -46,6 +50,8 @@ public class AuthenticationService {
                                  com.tradeall.tradefood.repository.PasswordResetTokenRepository tokenRepository) {
         this.userRepository = userRepository;
         this.contactSellsyRepository = contactSellsyRepository;
+        this.individualSellsyRepository = individualSellsyRepository;
+        this.companySellsyRepository = companySellsyRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
@@ -114,46 +120,14 @@ public class AuthenticationService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(User.Role.ROLE_USER)
+                .sellsyType(request.getType())
+                .companyName(request.getCompanyName())
                 .build();
         
-        log.debug("Création du contact Sellsy pour: {} {}", request.getFirstName(), request.getLastName());
-        // Création du client dans Sellsy
-        com.tradeall.tradefood.dto.sellsy.SellsyContact sellsyContact = new com.tradeall.tradefood.dto.sellsy.SellsyContact();
-        sellsyContact.setFirst_name(request.getFirstName());
-        sellsyContact.setLast_name(request.getLastName());
-        sellsyContact.setEmail(request.getEmail());
-        
-        try {
-            com.tradeall.tradefood.dto.sellsy.SellsyContact createdContact = sellsyClient.createContact(sellsyContact).block();
-            if (createdContact != null && createdContact.getId() != null) {
-                log.info("Contact Sellsy créé avec ID: {}, récupération des détails...", createdContact.getId());
-                // Récupération via GET comme demandé
-                com.tradeall.tradefood.dto.sellsy.SellsyContact fetchedContact = sellsyClient.getContact(createdContact.getId()).block();
-                if (fetchedContact != null) {
-                    log.info("Contact Sellsy récupéré avec succès ID: {}", fetchedContact.getId());
-                    user.setSellsyId(fetchedContact.getId());
-                    user.setSellsyContactId(fetchedContact.getId().toString());
-                    // Synchronisation de champs supplémentaires si présents
-                    if (fetchedContact.getCreated() != null) user.setCreated(fetchedContact.getCreated());
-                    if (fetchedContact.getUpdated() != null) user.setUpdated(fetchedContact.getUpdated());
-
-                    // Enregistrement également dans ContactSellsy
-                    ContactSellsy contactSellsy = contactSellsyRepository.findBySellsyId(fetchedContact.getId())
-                            .orElse(new ContactSellsy());
-                    contactSellsy.setSellsyId(fetchedContact.getId());
-                    contactSellsy.setFirstName(fetchedContact.getFirst_name());
-                    contactSellsy.setLastName(fetchedContact.getLast_name());
-                    contactSellsy.setEmail(fetchedContact.getEmail());
-                    contactSellsy.setCreated(fetchedContact.getCreated());
-                    contactSellsy.setUpdated(fetchedContact.getUpdated());
-                    contactSellsyRepository.save(contactSellsy);
-                }
-            } else {
-                log.warn("Le contact Sellsy n'a pas pu être créé (réponse nulle ou ID manquant)");
-            }
-        } catch (Exception e) {
-            log.error("Erreur lors de la création/récupération du contact Sellsy pour {}: {}", request.getEmail(), e.getMessage());
-            // On continue l'inscription locale même si Sellsy échoue
+        if ("COMPANY".equalsIgnoreCase(request.getType())) {
+            registerAsCompany(request, user);
+        } else {
+            registerAsIndividual(request, user);
         }
         
         userRepository.save(user);
@@ -163,6 +137,68 @@ public class AuthenticationService {
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
+    }
+
+    private void registerAsIndividual(RegisterRequest request, User user) {
+        log.debug("Création de l'individu Sellsy pour: {} {}", request.getFirstName(), request.getLastName());
+        com.tradeall.tradefood.dto.sellsy.SellsyIndividual sellsyIndividual = new com.tradeall.tradefood.dto.sellsy.SellsyIndividual();
+        sellsyIndividual.setFirst_name(request.getFirstName());
+        sellsyIndividual.setLast_name(request.getLastName());
+        sellsyIndividual.setEmail(request.getEmail());
+        sellsyIndividual.setType("prospect");
+
+        try {
+            com.tradeall.tradefood.dto.sellsy.SellsyIndividual createdIndividual = sellsyClient.createIndividual(sellsyIndividual).block();
+            if (createdIndividual != null && createdIndividual.getId() != null) {
+                log.info("Individu Sellsy créé avec ID: {}", createdIndividual.getId());
+                user.setSellsyId(createdIndividual.getId());
+                user.setSellsyContactId(createdIndividual.getId().toString());
+                user.setCreated(createdIndividual.getCreated());
+                user.setUpdated(createdIndividual.getUpdated_at());
+
+                com.tradeall.tradefood.entity.IndividualSellsy individualEntity = new com.tradeall.tradefood.entity.IndividualSellsy();
+                individualEntity.setSellsyId(createdIndividual.getId());
+                individualEntity.setFirstName(createdIndividual.getFirst_name());
+                individualEntity.setLastName(createdIndividual.getLast_name());
+                individualEntity.setEmail(createdIndividual.getEmail());
+                individualEntity.setType(createdIndividual.getType());
+                individualEntity.setCreated(createdIndividual.getCreated());
+                individualEntity.setUpdated(createdIndividual.getUpdated_at());
+                individualSellsyRepository.save(individualEntity);
+            }
+        } catch (Exception e) {
+            log.error("Erreur lors de la création de l'individu Sellsy pour {}: {}", request.getEmail(), e.getMessage());
+        }
+    }
+
+    private void registerAsCompany(RegisterRequest request, User user) {
+        log.debug("Création de la compagnie Sellsy pour: {}", request.getCompanyName());
+        com.tradeall.tradefood.dto.sellsy.SellsyCompany sellsyCompany = new com.tradeall.tradefood.dto.sellsy.SellsyCompany();
+        sellsyCompany.setName(request.getCompanyName());
+        sellsyCompany.setEmail(request.getEmail());
+        sellsyCompany.setType("prospect");
+
+        try {
+            com.tradeall.tradefood.dto.sellsy.SellsyCompany createdCompany = sellsyClient.createCompany(sellsyCompany).block();
+            if (createdCompany != null && createdCompany.getId() != null) {
+                log.info("Compagnie Sellsy créée avec ID: {}", createdCompany.getId());
+                user.setSellsyId(createdCompany.getId());
+                user.setSellsyContactId(createdCompany.getId().toString());
+                user.setCreated(createdCompany.getCreated());
+                user.setUpdated(createdCompany.getUpdated_at());
+
+                com.tradeall.tradefood.entity.CompanySellsy companyEntity = new com.tradeall.tradefood.entity.CompanySellsy();
+                companyEntity.setSellsyId(createdCompany.getId());
+                companyEntity.setName(createdCompany.getName());
+                companyEntity.setEmail(createdCompany.getEmail());
+                companyEntity.setType(createdCompany.getType());
+                companyEntity.setCreated(createdCompany.getCreated());
+                companyEntity.setUpdated(createdCompany.getUpdated_at());
+                companySellsyRepository.save(companyEntity);
+            }
+        } catch (Exception e) {
+            log.error("Erreur lors de la création de la compagnie Sellsy pour {}: {}", request.getEmail(), e.getMessage());
+        }
     }
 
     /**

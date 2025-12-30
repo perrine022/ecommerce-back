@@ -124,6 +124,9 @@ public class User implements UserDetails {
     @Column(name = "sellsy_type")
     private String sellsyType;
 
+    @Column(name = "company_name")
+    private String companyName;
+
     public User() {}
 
     @Override
@@ -232,6 +235,14 @@ public class User implements UserDetails {
         this.sellsyType = sellsyType;
     }
 
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -261,6 +272,7 @@ public class User implements UserDetails {
         private String lastName;
         private Role role;
         private String sellsyType;
+        private String companyName;
 
         public UserBuilder id(UUID id) { this.id = id; return this; }
         public UserBuilder sellsyId(Long sellsyId) { this.sellsyId = sellsyId; return this; }
@@ -270,6 +282,7 @@ public class User implements UserDetails {
         public UserBuilder lastName(String lastName) { this.lastName = lastName; return this; }
         public UserBuilder role(Role role) { this.role = role; return this; }
         public UserBuilder sellsyType(String sellsyType) { this.sellsyType = sellsyType; return this; }
+        public UserBuilder companyName(String companyName) { this.companyName = companyName; return this; }
 
         public User build() {
             User user = new User();
@@ -281,6 +294,7 @@ public class User implements UserDetails {
             user.setLastName(lastName);
             user.setRole(role);
             user.setSellsyType(sellsyType);
+            user.setCompanyName(companyName);
             return user;
         }
     }
