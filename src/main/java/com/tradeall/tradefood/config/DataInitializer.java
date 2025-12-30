@@ -2,6 +2,7 @@ package com.tradeall.tradefood.config;
 
 import com.tradeall.tradefood.entity.User;
 import com.tradeall.tradefood.repository.UserRepository;
+import com.tradeall.tradefood.service.SyncBatchService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,8 +15,12 @@ import java.util.UUID;
 public class DataInitializer {
 
     @Bean
-    public CommandLineRunner initData(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public CommandLineRunner initData(UserRepository userRepository, PasswordEncoder passwordEncoder, SyncBatchService syncBatchService) {
         return args -> {
+            // Lancement de la synchronisation automatique au démarrage
+            System.out.println("Lancement de la synchronisation automatique au démarrage...");
+            syncBatchService.runNightlySync();
+
             String email = "perrine@gmail.com";
             if (userRepository.findByEmail(email).isEmpty()) {
                 User perrine = User.builder()

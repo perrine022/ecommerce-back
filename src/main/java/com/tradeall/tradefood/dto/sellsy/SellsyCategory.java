@@ -12,6 +12,20 @@ public class SellsyCategory {
     private String color;
     private String icon;
     private Boolean is_default;
+    private SellsyCategoryEmbed _embed;
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SellsyCategoryEmbed {
+        private java.util.List<Object> sources;
+
+        public java.util.List<Object> getSources() {
+            return sources;
+        }
+
+        public void setSources(java.util.List<Object> sources) {
+            this.sources = sources;
+        }
+    }
 
     public Long getId() {
         return id;
@@ -51,5 +65,13 @@ public class SellsyCategory {
 
     public void setIs_default(Boolean is_default) {
         this.is_default = is_default;
+    }
+
+    public SellsyCategoryEmbed get_embed() {
+        return _embed;
+    }
+
+    public void set_embed(SellsyCategoryEmbed _embed) {
+        this._embed = _embed;
     }
 }

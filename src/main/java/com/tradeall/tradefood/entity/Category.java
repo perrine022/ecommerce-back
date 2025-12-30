@@ -1,5 +1,6 @@
 package com.tradeall.tradefood.entity;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import jakarta.persistence.*;
 import java.util.UUID;
 
@@ -29,6 +30,9 @@ public class Category {
 
     @Column(name = "is_default")
     private Boolean isDefault;
+
+    @Column(name = "sources", columnDefinition = "TEXT")
+    private String sources;
 
     public Category() {}
 
@@ -78,5 +82,14 @@ public class Category {
 
     public void setIsDefault(Boolean isDefault) {
         this.isDefault = isDefault;
+    }
+
+    @JsonRawValue
+    public String getSources() {
+        return sources;
+    }
+
+    public void setSources(String sources) {
+        this.sources = sources;
     }
 }

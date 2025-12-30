@@ -40,10 +40,11 @@ public class SellsyClient {
      * @return Un Mono contenant la réponse paginée.
      */
     public Mono<SellsyResponse<SellsyCategory>> getCategories(int limit, int offset) {
-        log.debug("Appel Sellsy GET /categories (limit: {}, offset: {})", limit, offset);
+        log.debug("Appel Sellsy GET /purchase/purOrder (limit: {}, offset: {})", limit, offset);
         return sellsyWebClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/categories")
+                        .path("/opportunities/categories")
+                        .queryParam("enable-beta", true)
                         .queryParam("limit", limit)
                         .queryParam("offset", offset)
                         .build())
@@ -186,6 +187,36 @@ public class SellsyClient {
                 .bodyValue(order)
                 .retrieve()
                 .bodyToMono(SellsyOrder.class);
+    }
+
+    /**
+     * Crée un nouvel individu dans Sellsy.
+     * @param individual Les données de l'individu à créer.
+     * @return Un Mono contenant l'individu créé.
+     */
+    public Mono<SellsyIndividual> createIndividual(SellsyIndividual individual) {
+        log.debug("Appel Sellsy POST /individuals pour: {}", individual.getEmail());
+        return sellsyWebClient.post()
+                .uri("/individuals")
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .bodyValue(individual)
+                .retrieve()
+                .bodyToMono(SellsyIndividual.class);
+    }
+
+    /**
+     * Crée une nouvelle compagnie dans Sellsy.
+     * @param company Les données de la compagnie à créer.
+     * @return Un Mono contenant la compagnie créée.
+     */
+    public Mono<SellsyCompany> createCompany(SellsyCompany company) {
+        log.debug("Appel Sellsy POST /companies pour: {}", company.getName());
+        return sellsyWebClient.post()
+                .uri("/companies")
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .bodyValue(company)
+                .retrieve()
+                .bodyToMono(SellsyCompany.class);
     }
 
     /**

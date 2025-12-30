@@ -311,6 +311,9 @@ public class UserService {
                                     company.setViadeo(dto.getSocial().getViadeo());
                                 }
 
+                                // Création/Mise à jour de l'utilisateur associé
+                                createOrUpdateUserFromCompany(company);
+
                                 return company;
                             })
                             .collect(Collectors.toList());
@@ -417,5 +420,42 @@ public class UserService {
 
         userRepository.save(user);
         log.debug("Utilisateur {} synchronisé depuis individuel Sellsy ID {}", user.getEmail(), individual.getSellsyId());
+    }
+
+    private void createOrUpdateUserFromCompany(CompanySellsy company) {
+        if (company.getEmail() == null || company.getEmail().isBlank()) {
+            return;
+        }
+
+        User user = userRepository.findByEmail(company.getEmail())
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setEmail(company.getEmail());
+                    newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+                    newUser.setRole(User.Role.ROLE_USER);
+                    return newUser;
+                });
+
+        user.setFirstName(""); // Les compagnies n'ont pas de prénom
+        user.setLastName(company.getName());
+        user.setSellsyId(company.getSellsyId());
+        user.setSellsyType("company");
+        user.setWebsite(company.getWebsite());
+        user.setPhoneNumber(company.getPhoneNumber());
+        user.setMobileNumber(company.getMobileNumber());
+        user.setFaxNumber(company.getFaxNumber());
+        user.setNote(company.getNote());
+        user.setInvoicingAddressId(company.getInvoicingAddressId());
+        user.setDeliveryAddressId(company.getDeliveryAddressId());
+        user.setTwitter(company.getTwitter());
+        user.setFacebook(company.getFacebook());
+        user.setLinkedin(company.getLinkedin());
+        user.setViadeo(company.getViadeo());
+        user.setCreated(company.getCreated());
+        user.setUpdated(company.getUpdated());
+        user.setIsArchived(company.getIsArchived());
+
+        userRepository.save(user);
+        log.debug("Utilisateur {} synchronisé depuis compagnie Sellsy ID {}", user.getEmail(), company.getSellsyId());
     }
 }

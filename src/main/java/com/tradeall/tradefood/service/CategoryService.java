@@ -4,6 +4,8 @@ import com.tradeall.tradefood.client.SellsyClient;
 import com.tradeall.tradefood.dto.sellsy.SellsyCategory;
 import com.tradeall.tradefood.entity.Category;
 import com.tradeall.tradefood.repository.CategoryRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,10 +25,12 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final SellsyClient sellsyClient;
+    private final ObjectMapper objectMapper;
 
-    public CategoryService(CategoryRepository categoryRepository, SellsyClient sellsyClient) {
+    public CategoryService(CategoryRepository categoryRepository, SellsyClient sellsyClient, ObjectMapper objectMapper) {
         this.categoryRepository = categoryRepository;
         this.sellsyClient = sellsyClient;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -71,6 +75,14 @@ public class CategoryService {
                     category.setColor(sc.getColor());
                     category.setIcon(sc.getIcon());
                     category.setIsDefault(sc.getIs_default());
+
+                    if (sc.get_embed() != null && sc.get_embed().getSources() != null) {
+                        try {
+                            category.setSources(objectMapper.writeValueAsString(sc.get_embed().getSources()));
+                        } catch (JsonProcessingException e) {
+                            log.error("Erreur lors de la sérialisation des sources pour la catégorie {}: {}", sc.getLabel(), e.getMessage());
+                        }
+                    }
 
                     categoryRepository.save(category);
                 }
