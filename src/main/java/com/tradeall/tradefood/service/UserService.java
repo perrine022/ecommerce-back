@@ -1,7 +1,13 @@
 package com.tradeall.tradefood.service;
 
 import com.tradeall.tradefood.client.SellsyClient;
+import com.tradeall.tradefood.entity.ContactSellsy;
+import com.tradeall.tradefood.entity.CompanySellsy;
+import com.tradeall.tradefood.entity.IndividualSellsy;
 import com.tradeall.tradefood.entity.User;
+import com.tradeall.tradefood.repository.ContactSellsyRepository;
+import com.tradeall.tradefood.repository.CompanySellsyRepository;
+import com.tradeall.tradefood.repository.IndividualSellsyRepository;
 import com.tradeall.tradefood.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,11 +30,22 @@ public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
+    private final ContactSellsyRepository contactRepository;
+    private final IndividualSellsyRepository individualRepository;
+    private final CompanySellsyRepository companyRepository;
     private final SellsyClient sellsyClient;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, SellsyClient sellsyClient, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, 
+                       ContactSellsyRepository contactRepository,
+                       IndividualSellsyRepository individualRepository,
+                       CompanySellsyRepository companyRepository,
+                       SellsyClient sellsyClient, 
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.contactRepository = contactRepository;
+        this.individualRepository = individualRepository;
+        this.companyRepository = companyRepository;
         this.sellsyClient = sellsyClient;
         this.passwordEncoder = passwordEncoder;
     }
@@ -97,70 +114,181 @@ public class UserService {
      */
     @Transactional
     public void syncUsers() {
-        log.info("Début de la synchronisation des clients depuis Sellsy");
+        log.info("Début de la synchronisation globale depuis Sellsy (Contacts, Individuals, Companies)");
+        syncContacts();
+        syncIndividuals();
+        syncCompanies();
+    }
+
+    private void syncContacts() {
         sellsyClient.getContacts(100, 0)
                 .map(response -> {
                     log.debug("Reçu {} contacts de Sellsy", response.getData().size());
                     return response.getData().stream()
-                            .map(contact -> {
-                                User user = userRepository.findByEmail(contact.getEmail())
-                                        .orElse(User.builder()
-                                                .email(contact.getEmail())
-                                                .password(passwordEncoder.encode("SellsyImport2025!"))
-                                                .role(User.Role.ROLE_USER)
-                                                .build());
+                            .filter(dto -> dto.getEmail() != null && !dto.getEmail().isBlank())
+                            .map(dto -> {
+                                ContactSellsy contact = contactRepository.findBySellsyId(dto.getId())
+                                        .orElse(new ContactSellsy());
 
-                                user.setSellsyId(contact.getId());
-                                user.setSellsyContactId(contact.getId().toString());
-                                user.setFirstName(contact.getFirst_name());
-                                user.setLastName(contact.getLast_name());
-                                user.setCivility(contact.getCivility());
-                                user.setWebsite(contact.getWebsite());
-                                user.setPhoneNumber(contact.getPhone_number());
-                                user.setMobileNumber(contact.getMobile_number());
-                                user.setFaxNumber(contact.getFax_number());
-                                user.setPosition(contact.getPosition());
-                                user.setBirthDate(contact.getBirth_date());
-                                user.setAvatar(contact.getAvatar());
-                                user.setNote(contact.getNote());
-                                user.setInvoicingAddressId(contact.getInvoicing_address_id());
-                                user.setDeliveryAddressId(contact.getDelivery_address_id());
-                                
-                                if (contact.getSocial() != null) {
-                                    user.setTwitter(contact.getSocial().getTwitter());
-                                    user.setFacebook(contact.getSocial().getFacebook());
-                                    user.setLinkedin(contact.getSocial().getLinkedin());
-                                    user.setViadeo(contact.getSocial().getViadeo());
+                                contact.setSellsyId(dto.getId());
+                                contact.setFirstName(dto.getFirst_name());
+                                contact.setLastName(dto.getLast_name());
+                                contact.setEmail(dto.getEmail());
+                                contact.setCivility(dto.getCivility());
+                                contact.setWebsite(dto.getWebsite());
+                                contact.setPhoneNumber(dto.getPhone_number());
+                                contact.setMobileNumber(dto.getMobile_number());
+                                contact.setFaxNumber(dto.getFax_number());
+                                contact.setPosition(dto.getPosition());
+                                contact.setBirthDate(dto.getBirth_date());
+                                contact.setAvatar(dto.getAvatar());
+                                contact.setNote(dto.getNote());
+                                contact.setInvoicingAddressId(dto.getInvoicing_address_id());
+                                contact.setDeliveryAddressId(dto.getDelivery_address_id());
+
+                                if (dto.getSocial() != null) {
+                                    contact.setTwitter(dto.getSocial().getTwitter());
+                                    contact.setFacebook(dto.getSocial().getFacebook());
+                                    contact.setLinkedin(dto.getSocial().getLinkedin());
+                                    contact.setViadeo(dto.getSocial().getViadeo());
                                 }
-                                
-                                if (contact.getSync() != null) {
-                                    user.setSyncMailchimp(contact.getSync().getMailchimp());
-                                    user.setSyncMailjet(contact.getSync().getMailjet());
-                                    user.setSyncSimplemail(contact.getSync().getSimplemail());
+
+                                if (dto.getSync() != null) {
+                                    contact.setSyncMailchimp(dto.getSync().getMailchimp());
+                                    contact.setSyncMailjet(dto.getSync().getMailjet());
+                                    contact.setSyncSimplemail(dto.getSync().getSimplemail());
                                 }
-                                
-                                if (contact.getOwner() != null) {
-                                    user.setOwnerId(contact.getOwner().getId());
-                                    user.setOwnerType(contact.getOwner().getType());
+
+                                if (dto.getOwner() != null) {
+                                    contact.setOwnerId(dto.getOwner().getId());
+                                    contact.setOwnerType(dto.getOwner().getType());
                                 }
-                                
-                                user.setCreated(contact.getCreated());
-                                user.setUpdated(contact.getUpdated());
-                                user.setIsArchived(contact.getIs_archived());
-                                user.setMarketingCampaignsSubscriptions(contact.getMarketing_campaigns_subscriptions());
-                                
-                                return user;
+
+                                contact.setCreated(dto.getCreated());
+                                contact.setUpdated(dto.getUpdated());
+                                contact.setIsArchived(dto.getIs_archived());
+                                contact.setMarketingCampaignsSubscriptions(dto.getMarketing_campaigns_subscriptions());
+
+                                return contact;
                             })
                             .collect(Collectors.toList());
                 })
                 .subscribe(
-                        users -> {
-                            userRepository.saveAll(users);
-                            log.info("Synchronisation réussie: {} utilisateurs mis à jour/créés", users.size());
+                        contacts -> {
+                            contactRepository.saveAll(contacts);
+                            log.info("Synchronisation réussie: {} contacts mis à jour/créés", contacts.size());
                         },
-                        error -> {
-                            log.error("Erreur lors de la synchronisation des clients Sellsy: {}", error.getMessage());
-                        }
+                        error -> log.error("Erreur lors de la synchronisation des contacts Sellsy: {}", error.getMessage())
+                );
+    }
+
+    private void syncIndividuals() {
+        sellsyClient.getIndividuals(100, 0)
+                .map(response -> {
+                    log.debug("Reçu {} individus de Sellsy", response.getData().size());
+                    return response.getData().stream()
+                            .filter(dto -> dto.getEmail() != null && !dto.getEmail().isBlank())
+                            .map(dto -> {
+                                IndividualSellsy individual = individualRepository.findBySellsyId(dto.getId())
+                                        .orElse(new IndividualSellsy());
+
+                                individual.setSellsyId(dto.getId());
+                                individual.setType(dto.getType());
+                                individual.setFirstName(dto.getFirst_name());
+                                individual.setLastName(dto.getLast_name());
+                                individual.setEmail(dto.getEmail());
+                                individual.setCivility(dto.getCivility());
+                                individual.setWebsite(dto.getWebsite());
+                                individual.setPhoneNumber(dto.getPhone_number());
+                                individual.setMobileNumber(dto.getMobile_number());
+                                individual.setFaxNumber(dto.getFax_number());
+                                individual.setReference(dto.getReference());
+                                individual.setNote(dto.getNote());
+                                individual.setInvoicingAddressId(dto.getInvoicing_address_id());
+                                individual.setDeliveryAddressId(dto.getDelivery_address_id());
+                                individual.setCreated(dto.getCreated());
+                                individual.setUpdated(dto.getUpdated_at());
+                                individual.setIsArchived(dto.getIs_archived());
+
+                                if (dto.getSocial() != null) {
+                                    individual.setTwitter(dto.getSocial().getTwitter());
+                                    individual.setFacebook(dto.getSocial().getFacebook());
+                                    individual.setLinkedin(dto.getSocial().getLinkedin());
+                                    individual.setViadeo(dto.getSocial().getViadeo());
+                                }
+
+                                if (dto.getSync() != null) {
+                                    individual.setSyncMailchimp(dto.getSync().getMailchimp());
+                                    individual.setSyncMailjet(dto.getSync().getMailjet());
+                                    individual.setSyncSimplemail(dto.getSync().getSimplemail());
+                                }
+
+                                return individual;
+                            })
+                            .collect(Collectors.toList());
+                })
+                .subscribe(
+                        individuals -> {
+                            individualRepository.saveAll(individuals);
+                            log.info("Synchronisation réussie: {} individus mis à jour/créés", individuals.size());
+                        },
+                        error -> log.error("Erreur lors de la synchronisation des individus Sellsy: {}", error.getMessage())
+                );
+    }
+
+    private void syncCompanies() {
+        sellsyClient.getCompanies(100, 0)
+                .map(response -> {
+                    log.debug("Reçu {} compagnies de Sellsy", response.getData().size());
+                    return response.getData().stream()
+                            .filter(dto -> dto.getEmail() != null && !dto.getEmail().isBlank())
+                            .map(dto -> {
+                                CompanySellsy company = companyRepository.findBySellsyId(dto.getId())
+                                        .orElse(new CompanySellsy());
+
+                                company.setSellsyId(dto.getId());
+                                company.setType(dto.getType());
+                                company.setName(dto.getName());
+                                company.setEmail(dto.getEmail());
+                                company.setWebsite(dto.getWebsite());
+                                company.setPhoneNumber(dto.getPhone_number());
+                                company.setMobileNumber(dto.getMobile_number());
+                                company.setFaxNumber(dto.getFax_number());
+                                company.setReference(dto.getReference());
+                                company.setNote(dto.getNote());
+                                company.setCreated(dto.getCreated());
+                                company.setUpdated(dto.getUpdated_at());
+                                company.setIsArchived(dto.getIs_archived());
+                                company.setMainContactId(dto.getMain_contact_id());
+                                company.setInvoicingAddressId(dto.getInvoicing_address_id());
+                                company.setDeliveryAddressId(dto.getDelivery_address_id());
+
+                                if (dto.getLegal_france() != null) {
+                                    company.setSiret(dto.getLegal_france().getSiret());
+                                    company.setSiren(dto.getLegal_france().getSiren());
+                                    company.setVat(dto.getLegal_france().getVat());
+                                    company.setApeNafCode(dto.getLegal_france().getApe_naf_code());
+                                    company.setCompanyType(dto.getLegal_france().getCompany_type());
+                                    company.setRcsImmatriculation(dto.getLegal_france().getRcs_immatriculation());
+                                }
+
+                                if (dto.getSocial() != null) {
+                                    company.setTwitter(dto.getSocial().getTwitter());
+                                    company.setFacebook(dto.getSocial().getFacebook());
+                                    company.setLinkedin(dto.getSocial().getLinkedin());
+                                    company.setViadeo(dto.getSocial().getViadeo());
+                                }
+
+                                return company;
+                            })
+                            .collect(Collectors.toList());
+                })
+                .subscribe(
+                        companies -> {
+                            companyRepository.saveAll(companies);
+                            log.info("Synchronisation réussie: {} compagnies mises à jour/créées", companies.size());
+                        },
+                        error -> log.error("Erreur lors de la synchronisation des compagnies Sellsy: {}", error.getMessage())
                 );
     }
 }

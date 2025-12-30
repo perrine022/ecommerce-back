@@ -43,6 +43,11 @@ public class OrderService {
         return orderRepository.findByUser(user);
     }
 
+    public List<Order> getOrdersByUserId(UUID userId) {
+        log.info("Récupération des commandes pour l'utilisateur ID: {}", userId);
+        return orderRepository.findByUser(User.builder().id(userId).build());
+    }
+
     /**
      * Récupère la liste de toutes les commandes du système.
      * @return La liste de toutes les commandes.
@@ -164,7 +169,7 @@ public class OrderService {
                 .collect(Collectors.toList());
         
         sellsyOrder.setRows(rows);
-
+        
         sellsyClient.createOrder(sellsyOrder).subscribe(
             response -> {
                 log.info("Commande Sellsy créée avec succès pour la commande locale ID: {}. Sellsy ID: {}", order.getId(), response.getId());
@@ -175,5 +180,43 @@ public class OrderService {
                 log.error("Erreur lors de la création de la commande Sellsy pour la commande locale ID: {}. Erreur: {}", order.getId(), error.getMessage());
             }
         );
+    }
+
+    /**
+     * Synchronise les commandes depuis Sellsy pour l'utilisateur.
+     * @param user L'utilisateur concerné.
+     */
+    @Transactional
+    public void syncOrdersFromSellsy(User user) {
+        log.info("Début de la synchronisation des commandes Sellsy pour l'utilisateur: {}", user.getEmail());
+        if (user.getSellsyContactId() == null) {
+            log.warn("L'utilisateur {} n'a pas d'ID Sellsy, synchronisation impossible.", user.getEmail());
+            return;
+        }
+
+        sellsyClient.getOrders(100, 0)
+            .map(response -> response.getData().stream()
+                .filter(so -> so.getContact_id() != null && 
+                             so.getContact_id().toString().equals(user.getSellsyContactId()))
+                .collect(Collectors.toList()))
+            .subscribe(
+                sellsyOrders -> {
+                    for (com.tradeall.tradefood.dto.sellsy.SellsyOrder so : sellsyOrders) {
+                        if (!orderRepository.existsBySellsyOrderId(so.getId().toString())) {
+                            Order newOrder = Order.builder()
+                                .user(user)
+                                .sellsyOrderId(so.getId().toString())
+                                .orderDate(LocalDateTime.now()) 
+                                .status(Order.OrderStatus.PAID)
+                                .totalAmount(0.0) 
+                                .items(new ArrayList<>())
+                                .build();
+                            orderRepository.save(newOrder);
+                        }
+                    }
+                    log.info("Synchronisation des commandes Sellsy terminée pour {}", user.getEmail());
+                },
+                error -> log.error("Erreur sync commandes Sellsy pour {}: {}", user.getEmail(), error.getMessage())
+            );
     }
 }

@@ -250,12 +250,14 @@ public class Order {
         private LocalDateTime orderDate;
         private Double totalAmount;
         private OrderStatus status;
+        private String sellsyOrderId;
         private List<OrderItem> items;
 
         public OrderBuilder user(User user) { this.user = user; return this; }
         public OrderBuilder orderDate(LocalDateTime orderDate) { this.orderDate = orderDate; return this; }
         public OrderBuilder totalAmount(Double totalAmount) { this.totalAmount = totalAmount; return this; }
         public OrderBuilder status(OrderStatus status) { this.status = status; return this; }
+        public OrderBuilder sellsyOrderId(String sellsyOrderId) { this.sellsyOrderId = sellsyOrderId; return this; }
         public OrderBuilder items(List<OrderItem> items) { this.items = items; return this; }
 
         public Order build() {
@@ -264,6 +266,7 @@ public class Order {
             order.setOrderDate(orderDate);
             order.setTotalAmount(totalAmount);
             order.setStatus(status);
+            order.setSellsyOrderId(sellsyOrderId);
             if (items != null) order.setItems(items);
             return order;
         }

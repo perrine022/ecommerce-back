@@ -1,6 +1,8 @@
 package com.tradeall.tradefood.client;
 
 import com.tradeall.tradefood.dto.sellsy.SellsyContact;
+import com.tradeall.tradefood.dto.sellsy.SellsyCompany;
+import com.tradeall.tradefood.dto.sellsy.SellsyIndividual;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrder;
 import com.tradeall.tradefood.dto.sellsy.SellsyProduct;
 import com.tradeall.tradefood.dto.sellsy.SellsyResponse;
@@ -66,6 +68,44 @@ public class SellsyClient {
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyContact>>() {});
+    }
+
+    /**
+     * Récupère la liste des individus depuis Sellsy.
+     * @param limit Nombre maximum.
+     * @param offset Décalage.
+     * @return Un Mono contenant la réponse paginée.
+     */
+    public Mono<SellsyResponse<SellsyIndividual>> getIndividuals(int limit, int offset) {
+        log.debug("Appel Sellsy GET /individuals (limit: {}, offset: {})", limit, offset);
+        return sellsyWebClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/individuals")
+                        .queryParam("limit", limit)
+                        .queryParam("offset", offset)
+                        .build())
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyIndividual>>() {});
+    }
+
+    /**
+     * Récupère la liste des compagnies depuis Sellsy.
+     * @param limit Nombre maximum.
+     * @param offset Décalage.
+     * @return Un Mono contenant la réponse paginée.
+     */
+    public Mono<SellsyResponse<SellsyCompany>> getCompanies(int limit, int offset) {
+        log.debug("Appel Sellsy GET /companies (limit: {}, offset: {})", limit, offset);
+        return sellsyWebClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/companies")
+                        .queryParam("limit", limit)
+                        .queryParam("offset", offset)
+                        .build())
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyCompany>>() {});
     }
 
     /**

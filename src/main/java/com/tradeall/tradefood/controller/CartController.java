@@ -54,4 +54,20 @@ public class CartController {
         cartService.addToCart(user, productId, quantity);
         return ResponseEntity.ok().build();
     }
+    @DeleteMapping("/remove")
+    public ResponseEntity<Void> removeFromCart(
+            @AuthenticationPrincipal User user,
+            @RequestParam UUID productId
+    ) {
+        log.info("Requête pour retirer du panier - Utilisateur: {}, Produit ID: {}", user.getEmail(), productId);
+        cartService.removeFromCart(user, productId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/clear")
+    public ResponseEntity<Void> clearCart(@AuthenticationPrincipal User user) {
+        log.info("Requête pour vider le panier - Utilisateur: {}", user.getEmail());
+        cartService.clearCart(user);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -28,10 +28,15 @@ public class ProductController {
 
     /**
      * Récupère la liste de tous les produits.
+     * @param search Terme de recherche optionnel.
      * @return Liste des produits.
      */
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts() {
+    public ResponseEntity<List<Product>> getAllProducts(@RequestParam(required = false) String search) {
+        if (search != null && !search.isEmpty()) {
+            log.info("Requête pour rechercher des produits avec: {}", search);
+            return ResponseEntity.ok(productService.searchProducts(search));
+        }
         log.info("Requête pour récupérer tous les produits");
         return ResponseEntity.ok(productService.getAllProducts());
     }

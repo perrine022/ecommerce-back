@@ -46,10 +46,25 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<List<Order>> getOrders(@AuthenticationPrincipal User user) {
         log.info("Récupération des commandes pour l'utilisateur: {} (Rôle: {})", user.getEmail(), user.getRole());
+        if (user.getRole() != User.Role.ROLE_ADMIN) {
+            orderService.syncOrdersFromSellsy(user);
+        }
+        
         if (user.getRole() == User.Role.ROLE_ADMIN) {
             return ResponseEntity.ok(orderService.getAllOrders());
         }
         return ResponseEntity.ok(orderService.getOrdersByUser(user));
+    }
+
+    /**
+     * Récupère toutes les commandes pour un client donné (Admin seulement).
+     * @param userId L'identifiant de l'utilisateur.
+     * @return Liste des commandes de l'utilisateur spécifié.
+     */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Order>> getOrdersByUserId(@PathVariable java.util.UUID userId) {
+        log.info("Récupération des commandes pour l'utilisateur ID: {}", userId);
+        return ResponseEntity.ok(orderService.getOrdersByUserId(userId));
     }
 
     /**

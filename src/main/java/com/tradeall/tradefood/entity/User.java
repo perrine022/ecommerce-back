@@ -61,7 +61,7 @@ public class User implements UserDetails {
     @Column(name = "birth_date")
     private String birthDate;
 
-    @Column(name = "avatar")
+    @Column(name = "avatar", columnDefinition = "TEXT")
     private String avatar;
     
     @Column(name = "note", columnDefinition = "TEXT")
@@ -120,6 +120,9 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
     private Role role;
+
+    @Column(name = "sellsy_type")
+    private String sellsyType;
 
     public User() {}
 
@@ -221,6 +224,14 @@ public class User implements UserDetails {
         this.role = role;
     }
 
+    public String getSellsyType() {
+        return sellsyType;
+    }
+
+    public void setSellsyType(String sellsyType) {
+        this.sellsyType = sellsyType;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -249,6 +260,7 @@ public class User implements UserDetails {
         private String firstName;
         private String lastName;
         private Role role;
+        private String sellsyType;
 
         public UserBuilder id(UUID id) { this.id = id; return this; }
         public UserBuilder sellsyId(Long sellsyId) { this.sellsyId = sellsyId; return this; }
@@ -257,6 +269,7 @@ public class User implements UserDetails {
         public UserBuilder firstName(String firstName) { this.firstName = firstName; return this; }
         public UserBuilder lastName(String lastName) { this.lastName = lastName; return this; }
         public UserBuilder role(Role role) { this.role = role; return this; }
+        public UserBuilder sellsyType(String sellsyType) { this.sellsyType = sellsyType; return this; }
 
         public User build() {
             User user = new User();
@@ -267,6 +280,7 @@ public class User implements UserDetails {
             user.setFirstName(firstName);
             user.setLastName(lastName);
             user.setRole(role);
+            user.setSellsyType(sellsyType);
             return user;
         }
     }

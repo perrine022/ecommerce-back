@@ -82,7 +82,7 @@ public class Product {
     @Column(name = "is_einvoicing_compliant")
     private Boolean isEinvoicingCompliant;
     
-    @Column(name = "image_url")
+    @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
     public Product() {}

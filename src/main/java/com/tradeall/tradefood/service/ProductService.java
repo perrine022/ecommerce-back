@@ -1,6 +1,7 @@
 package com.tradeall.tradefood.service;
 
 import com.tradeall.tradefood.client.SellsyClient;
+import com.tradeall.tradefood.dto.sellsy.SellsyProduct;
 import com.tradeall.tradefood.entity.Product;
 import com.tradeall.tradefood.repository.ProductRepository;
 import org.slf4j.Logger;
@@ -38,6 +39,16 @@ public class ProductService {
         List<Product> products = productRepository.findAll();
         log.info("Récupération de tous les produits : {} trouvés", products.size());
         return products;
+    }
+
+    /**
+     * Recherche des produits par nom ou description.
+     * @param query Le terme de recherche.
+     * @return Liste des produits correspondants.
+     */
+    public List<Product> searchProducts(String query) {
+        log.info("Recherche de produits avec la requête: {}", query);
+        return productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(query, query);
     }
 
     /**
@@ -94,56 +105,62 @@ public class ProductService {
         productRepository.deleteById(id);
     }
 
-    /**
-     * Synchronise le catalogue local avec les produits de Sellsy.
-     */
     @Transactional
     public void syncProducts() {
-        log.info("Début de la synchronisation des produits depuis Sellsy");
-        sellsyClient.getItems(100, 0)
-                .map(response -> {
-                    log.debug("Reçu {} produits de Sellsy", response.getData().size());
-                    return response.getData().stream()
-                        .map(sellsyProduct -> {
-                            Product product = Product.builder()
-                                .sellsyId(sellsyProduct.getId())
-                                .name(sellsyProduct.getName())
-                                .reference(sellsyProduct.getReference())
-                                .description(sellsyProduct.getDescription())
-                                .referencePrice(sellsyProduct.getReference_price())
-                                .purchaseAmount(sellsyProduct.getPurchase_amount())
-                                .build();
-                            
-                            // Map all other fields manually or use a more complete builder
-                            product.setType(sellsyProduct.getType());
-                            product.setReferencePriceTaxesExc(sellsyProduct.getReference_price_taxes_exc());
-                            product.setReferencePriceTaxesInc(sellsyProduct.getReference_price_taxes_inc());
-                            product.setIsReferencePriceTaxesFree(sellsyProduct.getIs_reference_price_taxes_free());
-                            product.setTaxId(sellsyProduct.getTax_id());
-                            product.setUnitId(sellsyProduct.getUnit_id());
-                            product.setCategoryId(sellsyProduct.getCategory_id());
-                            product.setPriceExcl_tax(sellsyProduct.getPrice_excl_tax());
-                            product.setCurrency(sellsyProduct.getCurrency());
-                            product.setStandardQuantity(sellsyProduct.getStandard_quantity());
-                            product.setIsNameIncludedInDescription(sellsyProduct.getIs_name_included_in_description());
-                            product.setAccountingCodeId(sellsyProduct.getAccounting_code_id());
-                            product.setAccountingPurchaseCodeId(sellsyProduct.getAccounting_purchase_code_id());
-                            product.setIsArchived(sellsyProduct.getIs_archived());
-                            product.setIsDeclined(sellsyProduct.getIs_declined());
-                            product.setIsEinvoicingCompliant(sellsyProduct.getIs_einvoicing_compliant());
-                            
-                            return product;
-                        })
-                        .collect(Collectors.toList());
-                })
-                .subscribe(
-                    products -> {
-                        productRepository.saveAll(products);
-                        log.info("Synchronisation réussie: {} produits mis à jour", products.size());
-                    },
-                    error -> {
-                        log.error("Erreur lors de la synchronisation des produits Sellsy: {}", error.getMessage());
+        log.info("Début de la synchronisation des produits depuis Sellsy...");
+        int limit = 100;
+        fetchAndSaveProducts(0, limit);
+    }
+
+    private void fetchAndSaveProducts(int offset, int limit) {
+        sellsyClient.getItems(limit, offset).subscribe(
+            response -> {
+                List<SellsyProduct> sellsyProducts = response.getData();
+                log.info("Traitement de {} produits (offset: {})", sellsyProducts.size(), offset);
+                
+                for (SellsyProduct sp : sellsyProducts) {
+                    Product product = productRepository.findAll().stream()
+                            .filter(p -> p.getSellsyId() != null && p.getSellsyId().equals(sp.getId()))
+                            .findFirst()
+                            .orElse(new Product());
+
+                    product.setSellsyId(sp.getId());
+                    product.setName(sp.getName());
+                    product.setReference(sp.getReference());
+                    product.setDescription(sp.getDescription());
+                    product.setType(sp.getType());
+                    product.setReferencePrice(sp.getReference_price());
+                    product.setReferencePriceTaxesExc(sp.getReference_price_taxes_exc());
+                    product.setPurchaseAmount(sp.getPurchase_amount());
+                    product.setReferencePriceTaxesInc(sp.getReference_price_taxes_inc());
+                    product.setIsReferencePriceTaxesFree(sp.getIs_reference_price_taxes_free());
+                    product.setTaxId(sp.getTax_id());
+                    product.setUnitId(sp.getUnit_id());
+                    product.setCategoryId(sp.getCategory_id());
+                    product.setPriceExcl_tax(sp.getPrice_excl_tax());
+                    product.setCurrency(sp.getCurrency());
+                    product.setStandardQuantity(sp.getStandard_quantity());
+                    product.setIsNameIncludedInDescription(sp.getIs_name_included_in_description());
+                    product.setAccountingCodeId(sp.getAccounting_code_id());
+                    product.setAccountingPurchaseCodeId(sp.getAccounting_purchase_code_id());
+                    product.setIsArchived(sp.getIs_archived());
+                    product.setIsDeclined(sp.getIs_declined());
+                    product.setIsEinvoicingCompliant(sp.getIs_einvoicing_compliant());
+                    
+                    if (product.getImageUrl() == null) {
+                        product.setImageUrl("https://via.placeholder.com/150");
                     }
-                );
+
+                    productRepository.save(product);
+                }
+
+                if (response.getPagination() != null && response.getPagination().getTotal() > offset + limit) {
+                    fetchAndSaveProducts(offset + limit, limit);
+                } else {
+                    log.info("Synchronisation des produits terminée.");
+                }
+            },
+            error -> log.error("Erreur lors de la synchronisation des produits Sellsy: {}", error.getMessage())
+        );
     }
 }

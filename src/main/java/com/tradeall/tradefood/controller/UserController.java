@@ -28,6 +28,12 @@ public class UserController {
         this.userService = userService;
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<User> getCurrentUser(@AuthenticationPrincipal User user) {
+        log.info("Requête pour récupérer l'utilisateur actuel: {}", user.getEmail());
+        return ResponseEntity.ok(user);
+    }
+
     /**
      * Récupère le profil de l'utilisateur authentifié.
      * @param user L'utilisateur authentifié.

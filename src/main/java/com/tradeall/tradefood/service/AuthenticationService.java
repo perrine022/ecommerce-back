@@ -3,7 +3,9 @@ package com.tradeall.tradefood.service;
 import com.tradeall.tradefood.dto.auth.AuthenticationRequest;
 import com.tradeall.tradefood.dto.auth.AuthenticationResponse;
 import com.tradeall.tradefood.dto.auth.RegisterRequest;
+import com.tradeall.tradefood.entity.ContactSellsy;
 import com.tradeall.tradefood.entity.User;
+import com.tradeall.tradefood.repository.ContactSellsyRepository;
 import com.tradeall.tradefood.repository.UserRepository;
 import com.tradeall.tradefood.security.JwtService;
 import org.slf4j.Logger;
@@ -28,14 +30,22 @@ public class AuthenticationService {
     private static final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
 
     private final UserRepository userRepository;
+    private final ContactSellsyRepository contactSellsyRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final com.tradeall.tradefood.client.SellsyClient sellsyClient;
     private final com.tradeall.tradefood.repository.PasswordResetTokenRepository tokenRepository;
 
-    public AuthenticationService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager, com.tradeall.tradefood.client.SellsyClient sellsyClient, com.tradeall.tradefood.repository.PasswordResetTokenRepository tokenRepository) {
+    public AuthenticationService(UserRepository userRepository, 
+                                 ContactSellsyRepository contactSellsyRepository,
+                                 PasswordEncoder passwordEncoder, 
+                                 JwtService jwtService, 
+                                 AuthenticationManager authenticationManager, 
+                                 com.tradeall.tradefood.client.SellsyClient sellsyClient, 
+                                 com.tradeall.tradefood.repository.PasswordResetTokenRepository tokenRepository) {
         this.userRepository = userRepository;
+        this.contactSellsyRepository = contactSellsyRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
@@ -126,6 +136,17 @@ public class AuthenticationService {
                     // Synchronisation de champs supplémentaires si présents
                     if (fetchedContact.getCreated() != null) user.setCreated(fetchedContact.getCreated());
                     if (fetchedContact.getUpdated() != null) user.setUpdated(fetchedContact.getUpdated());
+
+                    // Enregistrement également dans ContactSellsy
+                    ContactSellsy contactSellsy = contactSellsyRepository.findBySellsyId(fetchedContact.getId())
+                            .orElse(new ContactSellsy());
+                    contactSellsy.setSellsyId(fetchedContact.getId());
+                    contactSellsy.setFirstName(fetchedContact.getFirst_name());
+                    contactSellsy.setLastName(fetchedContact.getLast_name());
+                    contactSellsy.setEmail(fetchedContact.getEmail());
+                    contactSellsy.setCreated(fetchedContact.getCreated());
+                    contactSellsy.setUpdated(fetchedContact.getUpdated());
+                    contactSellsyRepository.save(contactSellsy);
                 }
             } else {
                 log.warn("Le contact Sellsy n'a pas pu être créé (réponse nulle ou ID manquant)");

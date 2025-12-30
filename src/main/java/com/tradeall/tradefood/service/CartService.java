@@ -112,4 +112,20 @@ public class CartService {
             log.info("Nouveau produit {} ajouté au panier de {}", product.getName(), user.getEmail());
         }
     }
+
+    @Transactional
+    public void removeFromCart(User user, UUID productId) {
+        log.debug("Retrait du produit ID: {} du panier de {}", productId, user.getEmail());
+        Cart cart = getCartByUser(user);
+        cart.getItems().removeIf(item -> item.getProduct().getId().equals(productId));
+        cartRepository.save(cart);
+    }
+
+    @Transactional
+    public void clearCart(User user) {
+        log.debug("Nettoyage du panier pour l'utilisateur: {}", user.getEmail());
+        Cart cart = getCartByUser(user);
+        cart.getItems().clear();
+        cartRepository.save(cart);
+    }
 }
