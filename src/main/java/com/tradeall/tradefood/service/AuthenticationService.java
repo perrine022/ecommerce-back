@@ -124,11 +124,13 @@ public class AuthenticationService {
                 .companyName(request.getCompanyName())
                 .build();
         
+        /*
         if ("COMPANY".equalsIgnoreCase(request.getType())) {
             registerAsCompany(request, user);
         } else {
             registerAsIndividual(request, user);
         }
+        */
         
         userRepository.save(user);
         log.info("Utilisateur enregistré localement avec succès: {}", user.getEmail());
