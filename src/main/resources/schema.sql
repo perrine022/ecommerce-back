@@ -1,0 +1,274 @@
+-- Script d'initialisation du schéma pour MySQL 8
+-- Créé le 2025-12-30 par Junie
+
+CREATE TABLE IF NOT EXISTS users (
+    id BINARY(16) PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    sellsy_id BIGINT,
+    sellsy_contact_id VARCHAR(255),
+    civility VARCHAR(50),
+    website VARCHAR(255),
+    phone_number VARCHAR(50),
+    mobile_number VARCHAR(50),
+    fax_number VARCHAR(50),
+    position VARCHAR(255),
+    birth_date VARCHAR(50),
+    avatar TEXT,
+    note TEXT,
+    invoicing_address_id BIGINT,
+    delivery_address_id BIGINT,
+    twitter VARCHAR(255),
+    facebook VARCHAR(255),
+    linkedin VARCHAR(255),
+    viadeo VARCHAR(255),
+    sync_mailchimp BOOLEAN,
+    sync_mailjet BOOLEAN,
+    sync_simplemail BOOLEAN,
+    owner_id BIGINT,
+    owner_type VARCHAR(50),
+    created VARCHAR(50),
+    updated VARCHAR(50),
+    is_archived BOOLEAN,
+    role VARCHAR(50),
+    sellsy_type VARCHAR(50),
+    company_name VARCHAR(255)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS user_marketing_campaigns (
+    user_id BINARY(16) NOT NULL,
+    campaign VARCHAR(255),
+    CONSTRAINT fk_user_campaigns FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS categories (
+    id BINARY(16) PRIMARY KEY,
+    sellsy_id BIGINT UNIQUE,
+    label VARCHAR(255),
+    color VARCHAR(50),
+    icon VARCHAR(255),
+    is_default BOOLEAN,
+    sources TEXT
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS products (
+    id BINARY(16) PRIMARY KEY,
+    sellsy_id BIGINT,
+    type VARCHAR(50),
+    name VARCHAR(255),
+    reference VARCHAR(255),
+    reference_price VARCHAR(50),
+    reference_price_taxes_exc VARCHAR(50),
+    purchase_amount VARCHAR(50),
+    reference_price_taxes_inc VARCHAR(50),
+    is_reference_price_taxes_free BOOLEAN,
+    tax_id BIGINT,
+    unit_id BIGINT,
+    category_id BIGINT,
+    price_excl_tax VARCHAR(50),
+    currency VARCHAR(10),
+    standard_quantity VARCHAR(50),
+    description TEXT,
+    is_name_included_in_description BOOLEAN,
+    accounting_code_id BIGINT,
+    accounting_purchase_code_id BIGINT,
+    is_archived BOOLEAN,
+    is_declined BOOLEAN,
+    is_einvoicing_compliant BOOLEAN,
+    image_url TEXT
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS carts (
+    id BINARY(16) PRIMARY KEY,
+    user_id BINARY(16),
+    CONSTRAINT fk_cart_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS cart_items (
+    id BINARY(16) PRIMARY KEY,
+    cart_id BINARY(16),
+    product_id BINARY(16),
+    quantity INTEGER,
+    CONSTRAINT fk_cart_item_cart FOREIGN KEY (cart_id) REFERENCES carts(id),
+    CONSTRAINT fk_cart_item_product FOREIGN KEY (product_id) REFERENCES products(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS orders (
+    id BINARY(16) PRIMARY KEY,
+    user_id BINARY(16),
+    order_date DATETIME,
+    total_amount DOUBLE,
+    status VARCHAR(50),
+    sellsy_order_id VARCHAR(255),
+    sellsy_order_doc_type VARCHAR(50),
+    number VARCHAR(255),
+    sellsy_status VARCHAR(50),
+    sellsy_order_status VARCHAR(50),
+    date VARCHAR(50),
+    due_date VARCHAR(50),
+    created VARCHAR(50),
+    subject VARCHAR(255),
+    total_raw_excl_tax VARCHAR(50),
+    total_after_discount_excl_tax VARCHAR(50),
+    total_packaging VARCHAR(50),
+    total_shipping VARCHAR(50),
+    total_excl_tax VARCHAR(50),
+    total_incl_tax VARCHAR(50),
+    currency VARCHAR(10),
+    fiscal_year_id BIGINT,
+    pdf_link TEXT,
+    assigned_staff_id BIGINT,
+    invoicing_address_id BIGINT,
+    delivery_address_id BIGINT,
+    issuer_address_id BIGINT,
+    contact_id BIGINT,
+    rate_category_id BIGINT,
+    note TEXT,
+    shipping_date VARCHAR(50),
+    company_reference VARCHAR(255),
+    company_name VARCHAR(255),
+    bank_account_id BIGINT,
+    eco_tax_id BIGINT,
+    check_label_id BIGINT,
+    vat_mode VARCHAR(50),
+    vat_mention VARCHAR(255),
+    shipping_weight_unit VARCHAR(20),
+    shipping_weight_value VARCHAR(50),
+    shipping_volume VARCHAR(50),
+    CONSTRAINT fk_order_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS order_items (
+    id BINARY(16) PRIMARY KEY,
+    order_id BINARY(16),
+    product_id BINARY(16),
+    quantity INTEGER,
+    unit_price DOUBLE,
+    sellsy_row_id BIGINT,
+    type VARCHAR(50),
+    unit_id BIGINT,
+    purchase_amount VARCHAR(50),
+    unit_amount VARCHAR(50),
+    tax_id BIGINT,
+    quantity_str VARCHAR(50),
+    reference VARCHAR(255),
+    description TEXT,
+    discount_type VARCHAR(50),
+    discount_value VARCHAR(50),
+    discount_total VARCHAR(50),
+    tax_rate VARCHAR(50),
+    tax_amount VARCHAR(50),
+    tax_label VARCHAR(255),
+    amount_tax_inc VARCHAR(50),
+    amount_tax_exc VARCHAR(50),
+    accounting_code_id BIGINT,
+    analytic_code VARCHAR(255),
+    is_optional BOOLEAN,
+    CONSTRAINT fk_order_item_order FOREIGN KEY (order_id) REFERENCES orders(id),
+    CONSTRAINT fk_order_item_product FOREIGN KEY (product_id) REFERENCES products(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id BINARY(16) PRIMARY KEY,
+    token VARCHAR(255),
+    user_id BINARY(16) NOT NULL,
+    expiry_date DATETIME,
+    CONSTRAINT fk_token_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS contacts_sellsy (
+    id BINARY(16) PRIMARY KEY,
+    sellsy_id BIGINT UNIQUE,
+    civility VARCHAR(50),
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    email VARCHAR(255),
+    website VARCHAR(255),
+    phone_number VARCHAR(50),
+    mobile_number VARCHAR(50),
+    fax_number VARCHAR(50),
+    position VARCHAR(255),
+    birth_date VARCHAR(50),
+    avatar TEXT,
+    note TEXT,
+    invoicing_address_id BIGINT,
+    delivery_address_id BIGINT,
+    twitter VARCHAR(255),
+    facebook VARCHAR(255),
+    linkedin VARCHAR(255),
+    viadeo VARCHAR(255),
+    sync_mailchimp BOOLEAN,
+    sync_mailjet BOOLEAN,
+    sync_simplemail BOOLEAN,
+    owner_id BIGINT,
+    owner_type VARCHAR(50),
+    created VARCHAR(50),
+    updated VARCHAR(50),
+    is_archived BOOLEAN
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS contact_sellsy_marketing_campaigns (
+    contact_id BINARY(16) NOT NULL,
+    campaign VARCHAR(255),
+    CONSTRAINT fk_contact_campaigns FOREIGN KEY (contact_id) REFERENCES contacts_sellsy(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS individuals_sellsy (
+    id BINARY(16) PRIMARY KEY,
+    sellsy_id BIGINT UNIQUE,
+    type VARCHAR(50),
+    last_name VARCHAR(255),
+    first_name VARCHAR(255),
+    civility VARCHAR(50),
+    email VARCHAR(255),
+    website VARCHAR(255),
+    phone_number VARCHAR(50),
+    mobile_number VARCHAR(50),
+    fax_number VARCHAR(50),
+    reference VARCHAR(255),
+    note TEXT,
+    twitter VARCHAR(255),
+    facebook VARCHAR(255),
+    linkedin VARCHAR(255),
+    viadeo VARCHAR(255),
+    invoicing_address_id BIGINT,
+    delivery_address_id BIGINT,
+    created VARCHAR(50),
+    updated VARCHAR(50),
+    is_archived BOOLEAN,
+    sync_mailchimp BOOLEAN,
+    sync_mailjet BOOLEAN,
+    sync_simplemail BOOLEAN
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS companies_sellsy (
+    id BINARY(16) PRIMARY KEY,
+    sellsy_id BIGINT UNIQUE,
+    type VARCHAR(50),
+    name VARCHAR(255),
+    email VARCHAR(255),
+    website VARCHAR(255),
+    phone_number VARCHAR(50),
+    mobile_number VARCHAR(50),
+    fax_number VARCHAR(50),
+    reference VARCHAR(255),
+    note TEXT,
+    created VARCHAR(50),
+    updated VARCHAR(50),
+    is_archived BOOLEAN,
+    siret VARCHAR(50),
+    siren VARCHAR(50),
+    vat VARCHAR(50),
+    ape_naf_code VARCHAR(20),
+    company_type VARCHAR(50),
+    rcs_immatriculation VARCHAR(255),
+    twitter VARCHAR(255),
+    facebook VARCHAR(255),
+    linkedin VARCHAR(255),
+    viadeo VARCHAR(255),
+    main_contact_id BIGINT,
+    invoicing_address_id BIGINT,
+    delivery_address_id BIGINT
+) ENGINE=InnoDB;
