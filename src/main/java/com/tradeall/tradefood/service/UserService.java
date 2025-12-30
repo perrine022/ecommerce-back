@@ -1,6 +1,7 @@
 package com.tradeall.tradefood.service;
 
 import com.tradeall.tradefood.client.SellsyClient;
+import com.tradeall.tradefood.dto.sellsy.SellsyResponse;
 import com.tradeall.tradefood.entity.ContactSellsy;
 import com.tradeall.tradefood.entity.CompanySellsy;
 import com.tradeall.tradefood.entity.IndividualSellsy;
@@ -15,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -115,16 +117,28 @@ public class UserService {
     @Transactional
     public void syncUsers() {
         log.info("Début de la synchronisation globale depuis Sellsy (Contacts, Individuals, Companies)");
-        syncContacts();
-        syncIndividuals();
-        syncCompanies();
+        syncContacts(0, 100);
+        syncIndividuals(0, 100);
+        syncCompanies(0, 100);
     }
 
     private void syncContacts() {
-        sellsyClient.getContacts(100, 0)
+        syncContacts(0, 100);
+    }
+
+    private void syncIndividuals() {
+        syncIndividuals(0, 100);
+    }
+
+    private void syncCompanies() {
+        syncCompanies(0, 100);
+    }
+
+    private void syncContacts(int offset, int limit) {
+        sellsyClient.getContacts(limit, offset)
                 .map(response -> {
-                    log.debug("Reçu {} contacts de Sellsy", response.getData().size());
-                    return response.getData().stream()
+                    log.debug("Reçu {} contacts de Sellsy (offset: {})", response.getData().size(), offset);
+                    List<ContactSellsy> entities = response.getData().stream()
                             .filter(dto -> dto.getEmail() != null && !dto.getEmail().isBlank())
                             .map(dto -> {
                                 ContactSellsy contact = contactRepository.findBySellsyId(dto.getId())
@@ -169,24 +183,33 @@ public class UserService {
                                 contact.setIsArchived(dto.getIs_archived());
                                 contact.setMarketingCampaignsSubscriptions(dto.getMarketing_campaigns_subscriptions());
 
+                                // Création/Mise à jour de l'utilisateur associé
+                                createOrUpdateUserFromContact(contact);
+
                                 return contact;
                             })
                             .collect(Collectors.toList());
+                    return new AbstractMap.SimpleEntry<>(response, entities);
                 })
                 .subscribe(
-                        contacts -> {
-                            contactRepository.saveAll(contacts);
-                            log.info("Synchronisation réussie: {} contacts mis à jour/créés", contacts.size());
+                        entry -> {
+                            List<ContactSellsy> entities = (List<ContactSellsy>) entry.getValue();
+                            contactRepository.saveAll(entities);
+                            log.info("Synchronisation réussie: {} contacts mis à jour/créés", entities.size());
+                            SellsyResponse<?> response = (SellsyResponse<?>) entry.getKey();
+                            if (response.getPagination() != null && response.getPagination().getTotal() > offset + limit) {
+                                syncContacts(offset + limit, limit);
+                            }
                         },
                         error -> log.error("Erreur lors de la synchronisation des contacts Sellsy: {}", error.getMessage())
                 );
     }
 
-    private void syncIndividuals() {
-        sellsyClient.getIndividuals(100, 0)
+    private void syncIndividuals(int offset, int limit) {
+        sellsyClient.getIndividuals(limit, offset)
                 .map(response -> {
-                    log.debug("Reçu {} individus de Sellsy", response.getData().size());
-                    return response.getData().stream()
+                    log.debug("Reçu {} individus de Sellsy (offset: {})", response.getData().size(), offset);
+                    List<IndividualSellsy> entities = response.getData().stream()
                             .filter(dto -> dto.getEmail() != null && !dto.getEmail().isBlank())
                             .map(dto -> {
                                 IndividualSellsy individual = individualRepository.findBySellsyId(dto.getId())
@@ -223,24 +246,33 @@ public class UserService {
                                     individual.setSyncSimplemail(dto.getSync().getSimplemail());
                                 }
 
+                                // Création/Mise à jour de l'utilisateur associé
+                                createOrUpdateUserFromIndividual(individual);
+
                                 return individual;
                             })
                             .collect(Collectors.toList());
+                    return new AbstractMap.SimpleEntry<>(response, entities);
                 })
                 .subscribe(
-                        individuals -> {
-                            individualRepository.saveAll(individuals);
-                            log.info("Synchronisation réussie: {} individus mis à jour/créés", individuals.size());
+                        entry -> {
+                            List<IndividualSellsy> entities = (List<IndividualSellsy>) entry.getValue();
+                            individualRepository.saveAll(entities);
+                            log.info("Synchronisation réussie: {} individus mis à jour/créés", entities.size());
+                            SellsyResponse<?> response = (SellsyResponse<?>) entry.getKey();
+                            if (response.getPagination() != null && response.getPagination().getTotal() > offset + limit) {
+                                syncIndividuals(offset + limit, limit);
+                            }
                         },
                         error -> log.error("Erreur lors de la synchronisation des individus Sellsy: {}", error.getMessage())
                 );
     }
 
-    private void syncCompanies() {
-        sellsyClient.getCompanies(100, 0)
+    private void syncCompanies(int offset, int limit) {
+        sellsyClient.getCompanies(limit, offset)
                 .map(response -> {
-                    log.debug("Reçu {} compagnies de Sellsy", response.getData().size());
-                    return response.getData().stream()
+                    log.debug("Reçu {} compagnies de Sellsy (offset: {})", response.getData().size(), offset);
+                    List<CompanySellsy> entities = response.getData().stream()
                             .filter(dto -> dto.getEmail() != null && !dto.getEmail().isBlank())
                             .map(dto -> {
                                 CompanySellsy company = companyRepository.findBySellsyId(dto.getId())
@@ -282,13 +314,108 @@ public class UserService {
                                 return company;
                             })
                             .collect(Collectors.toList());
+                    return new AbstractMap.SimpleEntry<>(response, entities);
                 })
                 .subscribe(
-                        companies -> {
-                            companyRepository.saveAll(companies);
-                            log.info("Synchronisation réussie: {} compagnies mises à jour/créées", companies.size());
+                        entry -> {
+                            List<CompanySellsy> entities = (List<CompanySellsy>) entry.getValue();
+                            companyRepository.saveAll(entities);
+                            log.info("Synchronisation réussie: {} compagnies mises à jour/créées", entities.size());
+                            SellsyResponse<?> response = (SellsyResponse<?>) entry.getKey();
+                            if (response.getPagination() != null && response.getPagination().getTotal() > offset + limit) {
+                                syncCompanies(offset + limit, limit);
+                            }
                         },
                         error -> log.error("Erreur lors de la synchronisation des compagnies Sellsy: {}", error.getMessage())
                 );
+    }
+
+    private void createOrUpdateUserFromContact(ContactSellsy contact) {
+        if (contact.getEmail() == null || contact.getEmail().isBlank()) {
+            return;
+        }
+
+        User user = userRepository.findByEmail(contact.getEmail())
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setEmail(contact.getEmail());
+                    newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Mot de passe temporaire aléatoire
+                    newUser.setRole(User.Role.ROLE_USER);
+                    return newUser;
+                });
+
+        user.setFirstName(contact.getFirstName());
+        user.setLastName(contact.getLastName());
+        user.setSellsyId(contact.getSellsyId());
+        user.setSellsyType("contact");
+        user.setCivility(contact.getCivility());
+        user.setWebsite(contact.getWebsite());
+        user.setPhoneNumber(contact.getPhoneNumber());
+        user.setMobileNumber(contact.getMobileNumber());
+        user.setFaxNumber(contact.getFaxNumber());
+        user.setPosition(contact.getPosition());
+        user.setBirthDate(contact.getBirthDate());
+        user.setAvatar(contact.getAvatar());
+        user.setNote(contact.getNote());
+        user.setInvoicingAddressId(contact.getInvoicingAddressId());
+        user.setDeliveryAddressId(contact.getDeliveryAddressId());
+        user.setTwitter(contact.getTwitter());
+        user.setFacebook(contact.getFacebook());
+        user.setLinkedin(contact.getLinkedin());
+        user.setViadeo(contact.getViadeo());
+        user.setSyncMailchimp(contact.getSyncMailchimp());
+        user.setSyncMailjet(contact.getSyncMailjet());
+        user.setSyncSimplemail(contact.getSyncSimplemail());
+        user.setOwnerId(contact.getOwnerId());
+        user.setOwnerType(contact.getOwnerType());
+        user.setCreated(contact.getCreated());
+        user.setUpdated(contact.getUpdated());
+        user.setIsArchived(contact.getIsArchived());
+        user.setMarketingCampaignsSubscriptions(contact.getMarketingCampaignsSubscriptions());
+
+        userRepository.save(user);
+        log.debug("Utilisateur {} synchronisé depuis contact Sellsy ID {}", user.getEmail(), contact.getSellsyId());
+    }
+
+    private void createOrUpdateUserFromIndividual(IndividualSellsy individual) {
+        if (individual.getEmail() == null || individual.getEmail().isBlank()) {
+            return;
+        }
+
+        User user = userRepository.findByEmail(individual.getEmail())
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setEmail(individual.getEmail());
+                    newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+                    newUser.setRole(User.Role.ROLE_USER);
+                    return newUser;
+                });
+
+        user.setFirstName(individual.getFirstName());
+        user.setLastName(individual.getLastName());
+        user.setSellsyId(individual.getSellsyId());
+        user.setSellsyType("individual");
+        user.setCivility(individual.getCivility());
+        user.setWebsite(individual.getWebsite());
+        user.setPhoneNumber(individual.getPhoneNumber());
+        user.setMobileNumber(individual.getMobileNumber());
+        user.setFaxNumber(individual.getFaxNumber());
+        user.setBirthDate(null); // Non présent sur IndividualSellsy
+        user.setNote(individual.getNote());
+        user.setInvoicingAddressId(individual.getInvoicingAddressId());
+        user.setDeliveryAddressId(individual.getDeliveryAddressId());
+        user.setTwitter(individual.getTwitter());
+        user.setFacebook(individual.getFacebook());
+        user.setLinkedin(individual.getLinkedin());
+        user.setViadeo(individual.getViadeo());
+        user.setSyncMailchimp(individual.getSyncMailchimp());
+        user.setSyncMailjet(individual.getSyncMailjet());
+        user.setSyncSimplemail(individual.getSyncSimplemail());
+        user.setCreated(individual.getCreated());
+        user.setUpdated(individual.getUpdated());
+        user.setIsArchived(individual.getIsArchived());
+
+        userRepository.save(user);
+        log.debug("Utilisateur {} synchronisé depuis individuel Sellsy ID {}", user.getEmail(), individual.getSellsyId());
     }
 }

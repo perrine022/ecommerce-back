@@ -1,5 +1,6 @@
 package com.tradeall.tradefood.client;
 
+import com.tradeall.tradefood.dto.sellsy.SellsyCategory;
 import com.tradeall.tradefood.dto.sellsy.SellsyContact;
 import com.tradeall.tradefood.dto.sellsy.SellsyCompany;
 import com.tradeall.tradefood.dto.sellsy.SellsyIndividual;
@@ -30,6 +31,25 @@ public class SellsyClient {
     public SellsyClient(WebClient sellsyWebClient, SellsyAuthService authService) {
         this.sellsyWebClient = sellsyWebClient;
         this.authService = authService;
+    }
+
+    /**
+     * Récupère la liste des catégories de produits depuis Sellsy.
+     * @param limit Nombre maximum.
+     * @param offset Décalage.
+     * @return Un Mono contenant la réponse paginée.
+     */
+    public Mono<SellsyResponse<SellsyCategory>> getCategories(int limit, int offset) {
+        log.debug("Appel Sellsy GET /categories (limit: {}, offset: {})", limit, offset);
+        return sellsyWebClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/categories")
+                        .queryParam("limit", limit)
+                        .queryParam("offset", offset)
+                        .build())
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyCategory>>() {});
     }
 
     /**
