@@ -488,4 +488,61 @@ public class UserService {
         userRepository.save(user);
         log.debug("Utilisateur {} synchronisé depuis compagnie Sellsy ID {}", user.getEmail(), company.getSellsyId());
     }
+
+    /**
+     * Crée une adresse dans Sellsy et met à jour l'utilisateur localement.
+     */
+    @Transactional
+    public reactor.core.publisher.Mono<com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO> createUserAddress(UUID userId, com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO addressDTO) {
+        User user = getUserById(userId);
+        if (user.getSellsyId() == null) {
+            return reactor.core.publisher.Mono.error(new RuntimeException("L'utilisateur n'a pas d'identifiant Sellsy."));
+        }
+
+        return sellsyClient.createAddress(user.getSellsyType(), user.getSellsyId(), addressDTO)
+                .map(newAddress -> {
+                    if (Boolean.TRUE.equals(addressDTO.getIs_invoicing_address())) {
+                        user.setInvoicingAddressId(newAddress.getId());
+                    }
+                    if (Boolean.TRUE.equals(addressDTO.getIs_delivery_address())) {
+                        user.setDeliveryAddressId(newAddress.getId());
+                    }
+                    userRepository.save(user);
+                    log.info("Adresse Sellsy {} créée et liée à l'utilisateur {}", newAddress.getId(), user.getEmail());
+                    return newAddress;
+                });
+    }
+
+    /**
+     * Récupère les adresses d'un utilisateur depuis Sellsy.
+     */
+    public reactor.core.publisher.Mono<SellsyResponse<com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO>> getUserAddresses(UUID userId, int limit, int offset) {
+        User user = getUserById(userId);
+        if (user.getSellsyId() == null) {
+            return reactor.core.publisher.Mono.error(new RuntimeException("L'utilisateur n'a pas d'identifiant Sellsy."));
+        }
+        return sellsyClient.getAddresses(user.getSellsyType(), user.getSellsyId(), limit, offset);
+    }
+
+    /**
+     * Met à jour une adresse dans Sellsy.
+     */
+    public reactor.core.publisher.Mono<com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO> updateUserAddress(UUID userId, Long addressId, com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO addressDTO) {
+        User user = getUserById(userId);
+        if (user.getSellsyId() == null) {
+            return reactor.core.publisher.Mono.error(new RuntimeException("L'utilisateur n'a pas d'identifiant Sellsy."));
+        }
+        return sellsyClient.updateAddress(user.getSellsyType(), user.getSellsyId(), addressId, addressDTO);
+    }
+
+    /**
+     * Supprime une adresse dans Sellsy.
+     */
+    public reactor.core.publisher.Mono<Void> deleteUserAddress(UUID userId, Long addressId) {
+        User user = getUserById(userId);
+        if (user.getSellsyId() == null) {
+            return reactor.core.publisher.Mono.error(new RuntimeException("L'utilisateur n'a pas d'identifiant Sellsy."));
+        }
+        return sellsyClient.deleteAddress(user.getSellsyType(), user.getSellsyId(), addressId);
+    }
 }

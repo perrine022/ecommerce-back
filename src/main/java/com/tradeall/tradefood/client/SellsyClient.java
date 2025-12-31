@@ -269,13 +269,14 @@ public class SellsyClient {
     }
 
     /**
-     * Récupère les adresses d'une compagnie.
+     * Récupère les adresses d'une entité (compagnie ou individu).
      */
-    public Mono<SellsyResponse<SellsyAddressDTO>> getCompanyAddresses(Long companyId, int limit, int offset) {
-        log.debug("Appel Sellsy GET /companies/{}/addresses", companyId);
+    public Mono<SellsyResponse<SellsyAddressDTO>> getAddresses(String type, Long id, int limit, int offset) {
+        String pathPrefix = "client".equals(type) || "company".equals(type) ? "/companies/" : "/individuals/";
+        log.debug("Appel Sellsy GET {}{}/addresses", pathPrefix, id);
         return sellsyWebClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/companies/" + companyId + "/addresses")
+                        .path(pathPrefix + id + "/addresses")
                         .queryParam("limit", limit)
                         .queryParam("offset", offset)
                         .build())
@@ -285,12 +286,13 @@ public class SellsyClient {
     }
 
     /**
-     * Crée une adresse pour une compagnie.
+     * Crée une adresse pour une entité (compagnie ou individu).
      */
-    public Mono<SellsyAddressDTO> createCompanyAddress(Long companyId, SellsyAddressDTO address) {
-        log.debug("Appel Sellsy POST /companies/{}/addresses", companyId);
+    public Mono<SellsyAddressDTO> createAddress(String type, Long id, SellsyAddressDTO address) {
+        String pathPrefix = "client".equals(type) || "company".equals(type) ? "/companies/" : "/individuals/";
+        log.debug("Appel Sellsy POST {}{}/addresses", pathPrefix, id);
         return sellsyWebClient.post()
-                .uri("/companies/" + companyId + "/addresses")
+                .uri(pathPrefix + id + "/addresses")
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .bodyValue(address)
                 .retrieve()
@@ -298,12 +300,13 @@ public class SellsyClient {
     }
 
     /**
-     * Met à jour une adresse d'une compagnie.
+     * Met à jour une adresse d'une entité.
      */
-    public Mono<SellsyAddressDTO> updateCompanyAddress(Long companyId, Long addressId, SellsyAddressDTO address) {
-        log.debug("Appel Sellsy PUT /companies/{}/addresses/{}", companyId, addressId);
+    public Mono<SellsyAddressDTO> updateAddress(String type, Long id, Long addressId, SellsyAddressDTO address) {
+        String pathPrefix = "client".equals(type) || "company".equals(type) ? "/companies/" : "/individuals/";
+        log.debug("Appel Sellsy PUT {}{}/addresses/{}", pathPrefix, id, addressId);
         return sellsyWebClient.put()
-                .uri("/companies/" + companyId + "/addresses/" + addressId)
+                .uri(pathPrefix + id + "/addresses/" + addressId)
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .bodyValue(address)
                 .retrieve()
@@ -311,12 +314,13 @@ public class SellsyClient {
     }
 
     /**
-     * Supprime une adresse d'une compagnie.
+     * Supprime une adresse d'une entité.
      */
-    public Mono<Void> deleteCompanyAddress(Long companyId, Long addressId) {
-        log.debug("Appel Sellsy DELETE /companies/{}/addresses/{}", companyId, addressId);
+    public Mono<Void> deleteAddress(String type, Long id, Long addressId) {
+        String pathPrefix = "client".equals(type) || "company".equals(type) ? "/companies/" : "/individuals/";
+        log.debug("Appel Sellsy DELETE {}{}/addresses/{}", pathPrefix, id, addressId);
         return sellsyWebClient.delete()
-                .uri("/companies/" + companyId + "/addresses/" + addressId)
+                .uri(pathPrefix + id + "/addresses/" + addressId)
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .retrieve()
                 .bodyToMono(Void.class);

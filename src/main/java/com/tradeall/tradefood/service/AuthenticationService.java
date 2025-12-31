@@ -137,6 +137,7 @@ public class AuthenticationService {
         var jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
+                .sellsyId(user.getSellsyId())
                 .build();
     }
 
@@ -261,6 +262,7 @@ public class AuthenticationService {
         var jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
+                .sellsyId(user.getSellsyId())
                 .build();
     }
 
