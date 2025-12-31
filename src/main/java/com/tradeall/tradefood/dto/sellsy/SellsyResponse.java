@@ -15,9 +15,13 @@ public class SellsyResponse<T> {
     public SellsyPagination getPagination() { return pagination; }
     public void setPagination(SellsyPagination pagination) { this.pagination = pagination; }
 
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
     public static class SellsyPagination {
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
         private Integer total;
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
         private Integer limit;
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
         private Integer offset;
 
         public Integer getTotal() { return total; }

@@ -153,8 +153,11 @@ public class SellsyOrder {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SellsyDecimalNumber {
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
         private Integer unit_price;
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
         private Integer quantity;
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
         private Integer main;
 
         // Getters and Setters

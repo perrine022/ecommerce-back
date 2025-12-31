@@ -52,6 +52,16 @@ public class ProductService {
     }
 
     /**
+     * Récupère les produits d'une catégorie donnée.
+     * @param categoryId L'ID Sellsy de la catégorie.
+     * @return Liste des produits.
+     */
+    public List<Product> getProductsByCategory(Long categoryId) {
+        log.info("Récupération des produits pour la catégorie Sellsy ID: {}", categoryId);
+        return productRepository.findByCategoryId(categoryId);
+    }
+
+    /**
      * Récupère un produit par son identifiant unique.
      * @param id L'identifiant du produit.
      * @return Le produit trouvé.

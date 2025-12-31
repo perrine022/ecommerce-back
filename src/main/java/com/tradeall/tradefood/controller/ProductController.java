@@ -32,10 +32,16 @@ public class ProductController {
      * @return Liste des produits.
      */
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts(@RequestParam(required = false) String search) {
+    public ResponseEntity<List<Product>> getAllProducts(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId) {
         if (search != null && !search.isEmpty()) {
             log.info("Requête pour rechercher des produits avec: {}", search);
             return ResponseEntity.ok(productService.searchProducts(search));
+        }
+        if (categoryId != null) {
+            log.info("Requête pour récupérer les produits de la catégorie: {}", categoryId);
+            return ResponseEntity.ok(productService.getProductsByCategory(categoryId));
         }
         log.info("Requête pour récupérer tous les produits");
         return ResponseEntity.ok(productService.getAllProducts());

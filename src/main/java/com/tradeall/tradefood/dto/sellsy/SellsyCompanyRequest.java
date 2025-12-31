@@ -21,12 +21,18 @@ public class SellsyCompanyRequest {
     private String note = "";
     private String auxiliary_code = "";
     private SellsySocialRequest social = new SellsySocialRequest();
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
     private Integer rate_category_id;
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
     private Integer accounting_code_id;
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
     private Integer accounting_purchase_code_id;
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
     private Integer owner_id;
     private Boolean is_archived = false;
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
     private Integer business_segment;
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = SafeIntegerDeserializer.class)
     private Integer number_of_employees;
     private List<String> marketing_campaigns_subscriptions = new ArrayList<>();
     private String created = "";

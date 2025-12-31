@@ -76,6 +76,11 @@ public class CategoryService {
                     .orElse(new Category());
 
             category.setSellsyIdV1(sc.getId());
+            try {
+                category.setSellsyId(Long.parseLong(sc.getId()));
+            } catch (NumberFormatException e) {
+                log.warn("Impossible de convertir l'ID v1 {} en Long pour sellsyId", sc.getId());
+            }
             category.setName(sc.getName());
             category.setDescription(sc.getDescription());
             category.setParentId(sc.getParentid());
@@ -83,6 +88,12 @@ public class CategoryService {
             category.setRank(sc.getRank());
             // On garde label pour la compatibilité si besoin, mais name est plus précis ici
             category.setLabel(sc.getName());
+
+            if (category.getSellsyId() != null && categoryRepository.findBySellsyId(category.getSellsyId()).isPresent() && category.getId() == null) {
+                 // Si on a déjà une catégorie avec cet ID v2, on la récupère pour éviter les doublons
+                 Category existing = categoryRepository.findBySellsyId(category.getSellsyId()).get();
+                 category.setId(existing.getId());
+            }
 
             categoryRepository.save(category);
 
