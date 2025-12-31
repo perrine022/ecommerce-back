@@ -127,6 +127,9 @@ public class User implements UserDetails {
     @Column(name = "company_name")
     private String companyName;
 
+    @Column(name = "active")
+    private Boolean active = false;
+
     public User() {}
 
     @Override
@@ -243,6 +246,14 @@ public class User implements UserDetails {
         this.companyName = companyName;
     }
 
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -326,7 +337,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return active != null && active;
     }
 
     public enum Role {

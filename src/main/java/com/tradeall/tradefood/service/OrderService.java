@@ -145,25 +145,32 @@ public class OrderService {
         
         SellsyOrder sellsyOrder = new SellsyOrder();
         
-        if (order.getUser().getSellsyContactId() == null) {
-            log.error("L'utilisateur {} n'a pas de SellsyContactId. Impossible de créer la commande Sellsy.", order.getUser().getEmail());
+        if (order.getUser().getSellsyId() == null) {
+            log.error("L'utilisateur {} n'a pas de SellsyId. Impossible de créer la commande Sellsy.", order.getUser().getEmail());
             return;
         }
         
-        sellsyOrder.setContact_id(Long.parseLong(order.getUser().getSellsyContactId()));
+        SellsyOrder.SellsyRelated related = new SellsyOrder.SellsyRelated();
+        related.setId(order.getUser().getSellsyId());
+        related.setType(order.getUser().getSellsyType() != null ? order.getUser().getSellsyType() : "contact");
+        sellsyOrder.setRelated(Collections.singletonList(related));
+        
         sellsyOrder.setSubject("Commande Tradefood #" + order.getId());
-        sellsyOrder.setDate(LocalDateTime.now().toString());
+        sellsyOrder.setDate(java.time.LocalDate.now().toString());
 
         log.debug("Préparation des lignes de commande pour Sellsy");
         List<SellsyOrder.SellsyRow> rows = order.getItems().stream()
                 .map(item -> {
                     SellsyOrder.SellsyRow row = new SellsyOrder.SellsyRow();
-                    row.setType("product");
+                    row.setType("single");
                     row.setReference(item.getProduct().getReference());
                     row.setQuantity(item.getQuantity().toString());
                     row.setUnit_amount(item.getUnitPrice().toString());
                     row.setDescription(item.getProduct().getName());
-                    row.setTax_id(1L); // Valeur par défaut
+                    row.setTax_id(item.getProduct().getTaxId() != null ? item.getProduct().getTaxId() : 1L);
+                    row.setUnit_id(item.getProduct().getUnitId());
+                    row.setPurchase_amount(item.getProduct().getPurchaseAmount());
+                    row.setAccounting_code_id(item.getProduct().getAccountingCodeId());
                     return row;
                 })
                 .collect(Collectors.toList());
@@ -174,6 +181,7 @@ public class OrderService {
             response -> {
                 log.info("Commande Sellsy créée avec succès pour la commande locale ID: {}. Sellsy ID: {}", order.getId(), response.getId());
                 order.setSellsyOrderId(response.getId().toString());
+                order.setNumber(response.getNumber());
                 orderRepository.save(order);
             },
             error -> {
@@ -183,34 +191,61 @@ public class OrderService {
     }
 
     /**
+     * Recherche des commandes Sellsy pour une entreprise donnée.
+     * @param sellsyCompanyId L'ID Sellsy de l'entreprise.
+     * @return Un Mono contenant la réponse paginée.
+     */
+    public reactor.core.publisher.Mono<com.tradeall.tradefood.dto.sellsy.SellsyResponse<SellsyOrder>> searchOrdersByCompany(Long sellsyCompanyId) {
+        Map<String, Object> filters = new HashMap<>();
+        filters.put("related_objects", Collections.singletonList(Map.of(
+                "type", "company",
+                "id", sellsyCompanyId
+        )));
+        
+        Map<String, Object> body = new HashMap<>();
+        body.put("filters", filters);
+        
+        return sellsyClient.searchOrders(body);
+    }
+
+    /**
      * Synchronise les commandes depuis Sellsy pour l'utilisateur.
      * @param user L'utilisateur concerné.
      */
     @Transactional
     public void syncOrdersFromSellsy(User user) {
         log.info("Début de la synchronisation des commandes Sellsy pour l'utilisateur: {}", user.getEmail());
-        if (user.getSellsyContactId() == null) {
+        if (user.getSellsyId() == null) {
             log.warn("L'utilisateur {} n'a pas d'ID Sellsy, synchronisation impossible.", user.getEmail());
             return;
         }
 
-        sellsyClient.getOrders(100, 0)
-            .map(response -> response.getData().stream()
-                .filter(so -> so.getContact_id() != null && 
-                             so.getContact_id().toString().equals(user.getSellsyContactId()))
-                .collect(Collectors.toList()))
+        String type = user.getSellsyType() != null ? user.getSellsyType() : "contact";
+        
+        Map<String, Object> filters = new HashMap<>();
+        filters.put("related_objects", Collections.singletonList(Map.of(
+                "type", type,
+                "id", user.getSellsyId()
+        )));
+        
+        Map<String, Object> body = new HashMap<>();
+        body.put("filters", filters);
+
+        sellsyClient.searchOrders(body)
             .subscribe(
-                sellsyOrders -> {
+                response -> {
+                    List<com.tradeall.tradefood.dto.sellsy.SellsyOrder> sellsyOrders = response.getData();
                     for (com.tradeall.tradefood.dto.sellsy.SellsyOrder so : sellsyOrders) {
                         if (!orderRepository.existsBySellsyOrderId(so.getId().toString())) {
                             Order newOrder = Order.builder()
                                 .user(user)
                                 .sellsyOrderId(so.getId().toString())
-                                .orderDate(LocalDateTime.now()) 
+                                .orderDate(LocalDateTime.now()) // Idéalement parser so.getCreated()
                                 .status(Order.OrderStatus.PAID)
-                                .totalAmount(0.0) 
+                                .totalAmount(Double.parseDouble(so.getAmounts().getTotal_incl_tax()))
                                 .items(new ArrayList<>())
                                 .build();
+                            newOrder.setNumber(so.getNumber());
                             orderRepository.save(newOrder);
                         }
                     }

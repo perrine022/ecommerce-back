@@ -237,4 +237,19 @@ public class SellsyClient {
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyOrder>>() {});
     }
+
+    /**
+     * Recherche des commandes dans Sellsy selon des filtres.
+     * @param searchBody Le corps de la requête de recherche.
+     * @return Un Mono contenant la réponse paginée.
+     */
+    public Mono<SellsyResponse<SellsyOrder>> searchOrders(Object searchBody) {
+        log.debug("Appel Sellsy POST /orders/search");
+        return sellsyWebClient.post()
+                .uri("/orders/search")
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .bodyValue(searchBody)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyOrder>>() {});
+    }
 }

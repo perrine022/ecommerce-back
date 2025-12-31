@@ -273,7 +273,6 @@ public class UserService {
                 .map(response -> {
                     log.debug("Reçu {} compagnies de Sellsy (offset: {})", response.getData().size(), offset);
                     List<CompanySellsy> entities = response.getData().stream()
-                            .filter(dto -> dto.getEmail() != null && !dto.getEmail().isBlank())
                             .map(dto -> {
                                 CompanySellsy company = companyRepository.findBySellsyId(dto.getId())
                                         .orElse(new CompanySellsy());
@@ -351,6 +350,12 @@ public class UserService {
         user.setLastName(contact.getLastName());
         user.setSellsyId(contact.getSellsyId());
         user.setSellsyType("contact");
+        
+        // Pour les contacts simples, on active par défaut s'ils sont synchronisés
+        // ou on pourrait imaginer une logique liée à la compagnie parente.
+        // Ici, on garde actif par défaut pour les contacts existants ou on peut rester prudent.
+        user.setActive(true); 
+
         user.setCivility(contact.getCivility());
         user.setWebsite(contact.getWebsite());
         user.setPhoneNumber(contact.getPhoneNumber());
@@ -397,7 +402,15 @@ public class UserService {
         user.setFirstName(individual.getFirstName());
         user.setLastName(individual.getLastName());
         user.setSellsyId(individual.getSellsyId());
-        user.setSellsyType("individual");
+        user.setSellsyType(individual.getType()); // Utiliser le type réel de Sellsy
+
+        // Logique d'activation : client et non prospect
+        if ("client".equalsIgnoreCase(individual.getType())) {
+            user.setActive(true);
+        } else {
+            user.setActive(false);
+        }
+
         user.setCivility(individual.getCivility());
         user.setWebsite(individual.getWebsite());
         user.setPhoneNumber(individual.getPhoneNumber());
@@ -439,7 +452,15 @@ public class UserService {
         user.setFirstName(""); // Les compagnies n'ont pas de prénom
         user.setLastName(company.getName());
         user.setSellsyId(company.getSellsyId());
-        user.setSellsyType("company");
+        user.setSellsyType(company.getType()); // Utiliser le type réel de Sellsy (prospect ou client)
+        
+        // Logique d'activation : client et non prospect
+        if ("client".equalsIgnoreCase(company.getType())) {
+            user.setActive(true);
+        } else {
+            user.setActive(false);
+        }
+
         user.setWebsite(company.getWebsite());
         user.setPhoneNumber(company.getPhoneNumber());
         user.setMobileNumber(company.getMobileNumber());

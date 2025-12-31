@@ -120,16 +120,15 @@ public class AuthenticationService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(User.Role.ROLE_USER)
-                .sellsyType("COMPANY")
+                .sellsyType("prospect")
                 .companyName(request.getCompanyName())
                 .build();
         
-        /*
-        registerAsCompany(request, user);
-        */
-        
         userRepository.save(user);
         log.info("Utilisateur enregistré localement avec succès: {}", user.getEmail());
+        
+        registerAsCompany(request, user);
+        userRepository.save(user); // Save again with Sellsy info
         
         var jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder()
@@ -217,6 +216,11 @@ public class AuthenticationService {
                     log.error("Utilisateur non trouvé après authentification: {}", request.getEmail());
                     return new RuntimeException("User not found");
                 });
+
+        if (!user.isEnabled()) {
+            log.warn("Tentative de connexion d'un utilisateur non activé: {}", request.getEmail());
+            throw new RuntimeException("Account is not active");
+        }
         
         log.info("Utilisateur authentifié avec succès: {}", request.getEmail());
         var jwtToken = jwtService.generateToken(user);

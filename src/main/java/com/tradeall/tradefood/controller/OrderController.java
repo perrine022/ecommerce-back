@@ -85,6 +85,18 @@ public class OrderController {
     }
 
     /**
+     * Recherche des commandes par entreprise dans Sellsy.
+     * @param companyId L'identifiant Sellsy de l'entreprise.
+     * @return Résultat de la recherche Sellsy.
+     */
+    @PostMapping("/search/company/{companyId}")
+    public reactor.core.publisher.Mono<ResponseEntity<?>> searchOrdersByCompany(@PathVariable Long companyId) {
+        log.info("Recherche de commandes Sellsy pour l'entreprise ID: {}", companyId);
+        return orderService.searchOrdersByCompany(companyId)
+                .map(ResponseEntity::ok);
+    }
+
+    /**
      * Initie le processus de commande en créant un objet Order et une intention de paiement Stripe.
      * @param user L'utilisateur authentifié.
      * @return Le Client Secret Stripe et l'ID de la commande.
