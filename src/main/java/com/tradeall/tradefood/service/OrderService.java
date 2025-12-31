@@ -236,7 +236,7 @@ public class OrderService {
     public reactor.core.publisher.Mono<com.tradeall.tradefood.dto.sellsy.SellsyResponse<SellsyOrder>> searchOrdersByCompany(Long sellsyCompanyId) {
         Map<String, Object> filters = new HashMap<>();
         filters.put("related_objects", Collections.singletonList(Map.of(
-                "type", "company",
+                "type", "client",
                 "id", sellsyCompanyId
         )));
         
@@ -258,7 +258,13 @@ public class OrderService {
             return;
         }
 
-        String type = user.getSellsyType() != null ? user.getSellsyType() : "contact";
+        String type = user.getSellsyType() != null ? user.getSellsyType() : "individual";
+        if ("contact".equals(type) || "prospect".equals(type)) {
+            type = "individual";
+        }
+        if ("company".equals(type)) {
+            type = "client";
+        }
         
         Map<String, Object> filters = new HashMap<>();
         filters.put("related_objects", Collections.singletonList(Map.of(

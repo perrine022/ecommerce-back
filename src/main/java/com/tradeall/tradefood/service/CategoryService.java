@@ -51,6 +51,49 @@ public class CategoryService {
     }
 
     /**
+     * Déclenche la synchronisation des catégories depuis Sellsy API v1.
+     */
+    @Transactional
+    public void syncCategoriesV1() {
+        log.info("Début de la synchronisation des catégories depuis Sellsy v1...");
+        sellsyClient.getCategoriesV1("Y").subscribe(
+            response -> {
+                if (response.getResponse() != null) {
+                    log.info("Traitement de {} catégories v1 reçues", response.getResponse().size());
+                    saveCategoriesV1(response.getResponse());
+                    log.info("Synchronisation des catégories v1 terminée.");
+                } else if (response.getError() != null) {
+                    log.error("Erreur Sellsy v1: {}", response.getError());
+                }
+            },
+            error -> log.error("Erreur lors de la synchronisation des catégories Sellsy v1: {}", error.getMessage())
+        );
+    }
+
+    private void saveCategoriesV1(List<com.tradeall.tradefood.dto.sellsy.SellsyV1Category> categories) {
+        for (com.tradeall.tradefood.dto.sellsy.SellsyV1Category sc : categories) {
+            Category category = categoryRepository.findBySellsyIdV1(sc.getId())
+                    .orElse(new Category());
+
+            category.setSellsyIdV1(sc.getId());
+            category.setName(sc.getName());
+            category.setDescription(sc.getDescription());
+            category.setParentId(sc.getParentid());
+            category.setLogo(sc.getLogo());
+            category.setRank(sc.getRank());
+            // On garde label pour la compatibilité si besoin, mais name est plus précis ici
+            category.setLabel(sc.getName());
+
+            categoryRepository.save(category);
+
+            // Traitement récursif des enfants si présents
+            if (sc.getChildren() != null && !sc.getChildren().isEmpty()) {
+                saveCategoriesV1(sc.getChildren());
+            }
+        }
+    }
+
+    /**
      * Déclenche la synchronisation des catégories depuis Sellsy.
      */
     @Transactional

@@ -28,6 +28,11 @@ public class WebClientConfig {
         return createWebClient(builder, authUrl);
     }
 
+    @Bean(name = "sellsyV1WebClient")
+    public WebClient sellsyV1WebClient(WebClient.Builder builder, @Value("${sellsy.v1-url:https://apifeed.sellsy.com/0/}") String sellsyV1Url) {
+        return createWebClient(builder, sellsyV1Url);
+    }
+
     private WebClient createWebClient(WebClient.Builder builder, String baseUrl) {
         ConnectionProvider provider = ConnectionProvider.builder("sellsy-pool")
                 .maxIdleTime(Duration.ofSeconds(20))

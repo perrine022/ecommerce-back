@@ -23,6 +23,12 @@ public class SyncBatchService {
         this.userService = userService;
     }
 
+    @jakarta.annotation.PostConstruct
+    public void initSync() {
+        log.info("Lancement de la synchronisation initiale au démarrage...");
+        categoryService.syncCategoriesV1();
+    }
+
     /**
      * Exécute la synchronisation complète toutes les nuits à 2h du matin.
      * Cron format: "0 0 2 * * ?"
@@ -33,7 +39,7 @@ public class SyncBatchService {
         
         try {
             log.info("Batch: Synchronisation des catégories...");
-            categoryService.syncCategories();
+            categoryService.syncCategoriesV1();
             
             log.info("Batch: Synchronisation des produits...");
             productService.syncProducts();

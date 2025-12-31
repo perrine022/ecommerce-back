@@ -31,12 +31,49 @@ public class SellsyClient {
 
     private static final Logger log = LoggerFactory.getLogger(SellsyClient.class);
     private final WebClient sellsyWebClient;
+    private final WebClient sellsyV1WebClient;
     private final SellsyAuthService authService;
 
-    public SellsyClient(WebClient webClient, SellsyAuthService authService) {
+    public SellsyClient(WebClient webClient, 
+                        @org.springframework.beans.factory.annotation.Qualifier("sellsyV1WebClient") WebClient sellsyV1WebClient,
+                        SellsyAuthService authService) {
         // Injection du WebClient principal (Primary) configuré avec sellsy.base-url
         this.sellsyWebClient = webClient;
+        this.sellsyV1WebClient = sellsyV1WebClient;
         this.authService = authService;
+    }
+
+    /**
+     * Récupère la liste des catégories de produits depuis Sellsy API v1.
+     */
+    public Mono<com.tradeall.tradefood.dto.sellsy.SellsyV1Response<java.util.List<com.tradeall.tradefood.dto.sellsy.SellsyV1Category>>> getCategoriesV1(String includeImages) {
+        log.debug("Appel Sellsy v1 Catalogue.getCategories (includeImages: {})", includeImages);
+        
+        com.tradeall.tradefood.dto.sellsy.SellsyV1Request v1Request = new com.tradeall.tradefood.dto.sellsy.SellsyV1Request();
+        v1Request.setMethod("Catalogue.getCategories");
+        v1Request.setParams(java.util.Map.of("includeImages", includeImages));
+
+        return sellsyV1WebClient.post()
+                .uri("")
+                .headers(headers -> {
+                    headers.setBearerAuth(authService.getAccessToken());
+                    headers.setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
+                })
+                .body(org.springframework.web.reactive.function.BodyInserters.fromFormData("request", "1")
+                        .with("io_mode", "json")
+                        .with("do_in", serializeToJson(v1Request)))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<com.tradeall.tradefood.dto.sellsy.SellsyV1Response<java.util.List<com.tradeall.tradefood.dto.sellsy.SellsyV1Category>>>() {})
+                .doOnNext(response -> log.debug("Réponse Sellsy v1 Catégories: {}", response.getResponse()));
+    }
+
+    private String serializeToJson(Object obj) {
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(obj);
+        } catch (Exception e) {
+            log.error("Erreur sérialisation JSON pour Sellsy v1: {}", e.getMessage());
+            return "{}";
+        }
     }
 
     /**
