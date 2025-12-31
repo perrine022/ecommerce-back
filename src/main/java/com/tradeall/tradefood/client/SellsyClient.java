@@ -282,6 +282,12 @@ public class SellsyClient {
                         .build())
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy getAddresses: {}", body);
+                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                    })
+                )
                 .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyAddressDTO>>() {});
     }
 
@@ -296,6 +302,12 @@ public class SellsyClient {
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .bodyValue(address)
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy createAddress: {}", body);
+                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                    })
+                )
                 .bodyToMono(SellsyAddressDTO.class);
     }
 
@@ -310,6 +322,12 @@ public class SellsyClient {
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .bodyValue(address)
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy updateAddress: {}", body);
+                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                    })
+                )
                 .bodyToMono(SellsyAddressDTO.class);
     }
 
@@ -323,6 +341,12 @@ public class SellsyClient {
                 .uri(pathPrefix + id + "/addresses/" + addressId)
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy deleteAddress: {}", body);
+                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                    })
+                )
                 .bodyToMono(Void.class);
     }
 

@@ -1,19 +1,21 @@
 package com.tradeall.tradefood.dto.sellsy;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SellsyAddressDTO {
     private Long id;
-    private String name = "";
-    private String address_line_1 = "";
-    private String address_line_2 = "";
-    private String address_line_3 = "";
-    private String address_line_4 = "";
-    private String postal_code = "";
-    private String city = "";
-    private String country = "";
-    private String country_code = "";
+    private String name;
+    private String address_line_1;
+    private String address_line_2;
+    private String address_line_3;
+    private String address_line_4;
+    private String postal_code;
+    private String city;
+    private String country;
+    private String country_code;
     private Boolean is_invoicing_address;
     private Boolean is_delivery_address;
     private Geocode geocode;

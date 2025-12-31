@@ -499,6 +499,21 @@ public class UserService {
             return reactor.core.publisher.Mono.error(new RuntimeException("L'utilisateur n'a pas d'identifiant Sellsy."));
         }
 
+        // Validation de base pour Sellsy v2
+        if (addressDTO.getAddress_line_1() == null || addressDTO.getAddress_line_1().isBlank()) {
+            return reactor.core.publisher.Mono.error(new RuntimeException("La ligne d'adresse 1 est obligatoire pour Sellsy."));
+        }
+        if (addressDTO.getPostal_code() == null || addressDTO.getPostal_code().isBlank()) {
+            return reactor.core.publisher.Mono.error(new RuntimeException("Le code postal est obligatoire pour Sellsy."));
+        }
+        if (addressDTO.getCity() == null || addressDTO.getCity().isBlank()) {
+            return reactor.core.publisher.Mono.error(new RuntimeException("La ville est obligatoire pour Sellsy."));
+        }
+        if (addressDTO.getCountry_code() == null || addressDTO.getCountry_code().isBlank()) {
+            // Sellsy v2 nécessite souvent un code pays (ex: FR)
+            addressDTO.setCountry_code("FR"); 
+        }
+
         return sellsyClient.createAddress(user.getSellsyType(), user.getSellsyId(), addressDTO)
                 .map(newAddress -> {
                     if (Boolean.TRUE.equals(addressDTO.getIs_invoicing_address())) {
