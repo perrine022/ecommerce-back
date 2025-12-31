@@ -127,6 +127,9 @@ public class User implements UserDetails {
     @Column(name = "company_name")
     private String companyName;
 
+    @Column(name = "siren")
+    private String siren;
+
     @Column(name = "active")
     private Boolean active = false;
 
@@ -246,6 +249,14 @@ public class User implements UserDetails {
         this.companyName = companyName;
     }
 
+    public String getSiren() {
+        return siren;
+    }
+
+    public void setSiren(String siren) {
+        this.siren = siren;
+    }
+
     public Boolean getActive() {
         return active;
     }
@@ -284,6 +295,7 @@ public class User implements UserDetails {
         private Role role;
         private String sellsyType;
         private String companyName;
+        private String siren;
 
         public UserBuilder id(UUID id) { this.id = id; return this; }
         public UserBuilder sellsyId(Long sellsyId) { this.sellsyId = sellsyId; return this; }
@@ -294,6 +306,7 @@ public class User implements UserDetails {
         public UserBuilder role(Role role) { this.role = role; return this; }
         public UserBuilder sellsyType(String sellsyType) { this.sellsyType = sellsyType; return this; }
         public UserBuilder companyName(String companyName) { this.companyName = companyName; return this; }
+        public UserBuilder siren(String siren) { this.siren = siren; return this; }
 
         public User build() {
             User user = new User();
@@ -306,6 +319,7 @@ public class User implements UserDetails {
             user.setRole(role);
             user.setSellsyType(sellsyType);
             user.setCompanyName(companyName);
+            user.setSiren(siren);
             return user;
         }
     }

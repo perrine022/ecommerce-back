@@ -290,9 +290,18 @@ public class UserService {
                                 company.setCreated(dto.getCreated());
                                 company.setUpdated(dto.getUpdated_at());
                                 company.setIsArchived(dto.getIs_archived());
-                                company.setMainContactId(dto.getMain_contact_id());
-                                company.setInvoicingAddressId(dto.getInvoicing_address_id());
-                                company.setDeliveryAddressId(dto.getDelivery_address_id());
+
+                                if (dto.get_embed() != null) {
+                                    if (dto.get_embed().getMain_contact() != null) {
+                                        company.setMainContactId(dto.get_embed().getMain_contact().getId());
+                                    }
+                                    if (dto.get_embed().getInvoicing_address() != null) {
+                                        company.setInvoicingAddressId(dto.get_embed().getInvoicing_address().getId());
+                                    }
+                                    if (dto.get_embed().getDelivery_address() != null) {
+                                        company.setDeliveryAddressId(dto.get_embed().getDelivery_address().getId());
+                                    }
+                                }
 
                                 if (dto.getLegal_france() != null) {
                                     company.setSiret(dto.getLegal_france().getSiret());

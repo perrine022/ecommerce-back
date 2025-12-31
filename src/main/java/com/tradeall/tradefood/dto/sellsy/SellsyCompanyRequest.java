@@ -1,64 +1,38 @@
 package com.tradeall.tradefood.dto.sellsy;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.List;
+import java.util.ArrayList;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SellsyCompany {
-    private Long id;
-    private String type = "";
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class SellsyCompanyRequest {
+    private String type = "prospect";
     private String name = "";
     private String email = "";
     private String website = "";
     private String phone_number = "";
     private String mobile_number = "";
     private String fax_number = "";
+    private SellsyLegalFranceRequest legal_france = new SellsyLegalFranceRequest();
+    private String capital = "";
     private String reference = "";
     private String note = "";
-    private String created = "";
-    private String updated_at = "";
-    private Boolean is_archived;
-    private SellsyLegalFrance legal_france;
-    private SellsySocial social;
+    private String auxiliary_code = "";
+    private SellsySocialRequest social = new SellsySocialRequest();
+    private Integer rate_category_id;
+    private Integer accounting_code_id;
+    private Integer accounting_purchase_code_id;
+    private Integer owner_id;
+    private Boolean is_archived = false;
     private Integer business_segment;
     private Integer number_of_employees;
-    private SellsyEmbed _embed;
+    private List<String> marketing_campaigns_subscriptions = new ArrayList<>();
+    private String created = "";
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class SellsyEmbed {
-        private SellsyAddress invoicing_address;
-        private SellsyAddress delivery_address;
-        private SellsyContact main_contact;
-
-        public SellsyAddress getInvoicing_address() { return invoicing_address; }
-        public void setInvoicing_address(SellsyAddress invoicing_address) { this.invoicing_address = invoicing_address; }
-        public SellsyAddress getDelivery_address() { return delivery_address; }
-        public void setDelivery_address(SellsyAddress delivery_address) { this.delivery_address = delivery_address; }
-        public SellsyContact getMain_contact() { return main_contact; }
-        public void setMain_contact(SellsyContact main_contact) { this.main_contact = main_contact; }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class SellsyAddress {
-        private Long id;
-        private String name = "";
-        private String address_line_1 = "";
-        private String postal_code = "";
-        private String city = "";
-
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public String getAddress_line_1() { return address_line_1; }
-        public void setAddress_line_1(String address_line_1) { this.address_line_1 = address_line_1; }
-        public String getPostal_code() { return postal_code; }
-        public void setPostal_code(String postal_code) { this.postal_code = postal_code; }
-        public String getCity() { return city; }
-        public void setCity(String city) { this.city = city; }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class SellsyLegalFrance {
+    public static class SellsyLegalFranceRequest {
         private String siret = "";
         private String siren = "";
         private String vat = "";
@@ -81,7 +55,7 @@ public class SellsyCompany {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class SellsySocial {
+    public static class SellsySocialRequest {
         private String twitter = "";
         private String facebook = "";
         private String linkedin = "";
@@ -97,8 +71,7 @@ public class SellsyCompany {
         public void setViadeo(String viadeo) { this.viadeo = viadeo; }
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // Getters and Setters
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
     public String getName() { return name; }
@@ -113,24 +86,34 @@ public class SellsyCompany {
     public void setMobile_number(String mobile_number) { this.mobile_number = mobile_number; }
     public String getFax_number() { return fax_number; }
     public void setFax_number(String fax_number) { this.fax_number = fax_number; }
+    public SellsyLegalFranceRequest getLegal_france() { return legal_france; }
+    public void setLegal_france(SellsyLegalFranceRequest legal_france) { this.legal_france = legal_france; }
+    public String getCapital() { return capital; }
+    public void setCapital(String capital) { this.capital = capital; }
     public String getReference() { return reference; }
     public void setReference(String reference) { this.reference = reference; }
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }
-    public String getCreated() { return created; }
-    public void setCreated(String created) { this.created = created; }
-    public String getUpdated_at() { return updated_at; }
-    public void setUpdated_at(String updated_at) { this.updated_at = updated_at; }
+    public String getAuxiliary_code() { return auxiliary_code; }
+    public void setAuxiliary_code(String auxiliary_code) { this.auxiliary_code = auxiliary_code; }
+    public SellsySocialRequest getSocial() { return social; }
+    public void setSocial(SellsySocialRequest social) { this.social = social; }
+    public Integer getRate_category_id() { return rate_category_id; }
+    public void setRate_category_id(Integer rate_category_id) { this.rate_category_id = rate_category_id; }
+    public Integer getAccounting_code_id() { return accounting_code_id; }
+    public void setAccounting_code_id(Integer accounting_code_id) { this.accounting_code_id = accounting_code_id; }
+    public Integer getAccounting_purchase_code_id() { return accounting_purchase_code_id; }
+    public void setAccounting_purchase_code_id(Integer accounting_purchase_code_id) { this.accounting_purchase_code_id = accounting_purchase_code_id; }
+    public Integer getOwner_id() { return owner_id; }
+    public void setOwner_id(Integer owner_id) { this.owner_id = owner_id; }
     public Boolean getIs_archived() { return is_archived; }
     public void setIs_archived(Boolean is_archived) { this.is_archived = is_archived; }
-    public SellsyLegalFrance getLegal_france() { return legal_france; }
-    public void setLegal_france(SellsyLegalFrance legal_france) { this.legal_france = legal_france; }
-    public SellsySocial getSocial() { return social; }
-    public void setSocial(SellsySocial social) { this.social = social; }
     public Integer getBusiness_segment() { return business_segment; }
     public void setBusiness_segment(Integer business_segment) { this.business_segment = business_segment; }
     public Integer getNumber_of_employees() { return number_of_employees; }
     public void setNumber_of_employees(Integer number_of_employees) { this.number_of_employees = number_of_employees; }
-    public SellsyEmbed get_embed() { return _embed; }
-    public void set_embed(SellsyEmbed _embed) { this._embed = _embed; }
+    public List<String> getMarketing_campaigns_subscriptions() { return marketing_campaigns_subscriptions; }
+    public void setMarketing_campaigns_subscriptions(List<String> marketing_campaigns_subscriptions) { this.marketing_campaigns_subscriptions = marketing_campaigns_subscriptions; }
+    public String getCreated() { return created; }
+    public void setCreated(String created) { this.created = created; }
 }

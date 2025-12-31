@@ -116,35 +116,46 @@ public class SireneService {
     }
 
     private boolean isValidCompany(Map<String, Object> ul) {
-        // 2. etatAdministratifUniteLegale == "A"
-        String etatAdministratifUniteLegale = (String) ul.get("etatAdministratifUniteLegale");
-        if (!"A".equals(etatAdministratifUniteLegale)) {
-            return false;
+        // Validation basée sur les périodes (historique)
+        List<Map<String, Object>> periodes = (List<Map<String, Object>>) ul.get("periodesUniteLegale");
+        if (periodes != null && !periodes.isEmpty()) {
+            // On prend la période actuelle (la première de la liste généralement)
+            Map<String, Object> periodeActuelle = periodes.get(0);
+            
+            // 2. etatAdministratifUniteLegale == "A" (Active)
+            String etatAdministratif = (String) periodeActuelle.get("etatAdministratifUniteLegale");
+            if (!"A".equals(etatAdministratif)) {
+                log.warn("Entreprise non active: etatAdministratifUniteLegale = {}", etatAdministratif);
+                return false;
+            }
+
+            // 5. categorieJuridiqueUniteLegale != "1000" (Entrepreneurs individuels)
+            String categorieJuridique = (String) periodeActuelle.get("categorieJuridiqueUniteLegale");
+            if ("1000".equals(categorieJuridique)) {
+                log.warn("Entreprise de type entrepreneur individuel (1000) non autorisée");
+                return false;
+            }
         }
 
         // 3. trancheEffectifsUniteLegale != "00" ou "01"
-        String trancheEffectifsUniteLegale = (String) ul.get("trancheEffectifsUniteLegale");
-        if ("00".equals(trancheEffectifsUniteLegale) || "01".equals(trancheEffectifsUniteLegale)) {
-            return false;
-        }
-
-        // 5. categorieJuridiqueUniteLegale != "1000"
-        String categorieJuridiqueUniteLegale = (String) ul.get("categorieJuridiqueUniteLegale");
-        if ("1000".equals(categorieJuridiqueUniteLegale)) {
+        String trancheEffectifs = (String) ul.get("trancheEffectifsUniteLegale");
+        if ("00".equals(trancheEffectifs) || "01".equals(trancheEffectifs)) {
+            log.warn("Tranche d'effectifs trop basse: {}", trancheEffectifs);
             return false;
         }
 
         // 4. supprimmes les entreprises qui ont moins de deux ans (dateCreationUniteLegale)
-        String dateCreationUniteLegaleStr = (String) ul.get("dateCreationUniteLegale");
-        if (dateCreationUniteLegaleStr != null) {
+        String dateCreationStr = (String) ul.get("dateCreationUniteLegale");
+        if (dateCreationStr != null) {
             try {
-                LocalDate dateCreation = LocalDate.parse(dateCreationUniteLegaleStr);
+                LocalDate dateCreation = LocalDate.parse(dateCreationStr);
                 LocalDate now = LocalDate.now();
                 if (Period.between(dateCreation, now).getYears() < 2) {
+                    log.warn("Entreprise trop récente: créée le {}", dateCreationStr);
                     return false;
                 }
             } catch (Exception e) {
-                log.warn("Impossible de parser la date de création : {}", dateCreationUniteLegaleStr);
+                log.warn("Impossible de parser la date de création : {}", dateCreationStr);
             }
         }
 
@@ -152,18 +163,27 @@ public class SireneService {
     }
 
     private SireneCompanyInfoDTO extractCompanyInfo(Map<String, Object> ul, String siren) {
-        String name = (String) ul.get("denominationUniteLegale");
+            String name = "";
+        
+        // Extraction du nom depuis les périodes (denominationUniteLegale)
+        List<Map<String, Object>> periodes = (List<Map<String, Object>>) ul.get("periodesUniteLegale");
+        if (periodes != null && !periodes.isEmpty()) {
+            Map<String, Object> periodeActuelle = periodes.get(0);
+            name = (String) periodeActuelle.get("denominationUniteLegale");
+        }
+        
+        // Fallback si denominationUniteLegale est vide dans la période
+        if (name == null || name.isEmpty()) {
+            name = (String) ul.get("denominationUniteLegale");
+        }
+
+        // Fallback si toujours vide (cas des personnes physiques)
         if (name == null || name.isEmpty()) {
             String nom = (String) ul.get("nomUniteLegale");
             String prenom = (String) ul.get("prenom1UniteLegale");
             name = (prenom != null ? prenom + " " : "") + (nom != null ? nom : "");
         }
 
-        // Dans l'endpoint SIREN, on n'a pas l'adresse complète directement comme dans l'etablissement siege
-        // Habituellement, l'adresse est liée à un établissement. 
-        // L'API SIREN 3.11 renvoie l'unité légale, mais pas forcément l'adresse du siège directement sans passer par les établissements.
-        // Toutefois, on peut essayer de récupérer le siège s'il est inclus ou laisser vide/SIREN si absent.
-        
-        return new SireneCompanyInfoDTO(name, "Adresse non disponible via endpoint SIREN", siren);
+        return new SireneCompanyInfoDTO(name.trim(), "Adresse non disponible via endpoint SIREN", siren);
     }
 }

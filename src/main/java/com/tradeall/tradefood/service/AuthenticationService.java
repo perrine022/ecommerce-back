@@ -3,6 +3,7 @@ package com.tradeall.tradefood.service;
 import com.tradeall.tradefood.dto.auth.AuthenticationRequest;
 import com.tradeall.tradefood.dto.auth.AuthenticationResponse;
 import com.tradeall.tradefood.dto.auth.RegisterRequest;
+import com.tradeall.tradefood.dto.sellsy.SellsyCompany;
 import com.tradeall.tradefood.entity.ContactSellsy;
 import com.tradeall.tradefood.entity.User;
 import com.tradeall.tradefood.repository.ContactSellsyRepository;
@@ -122,7 +123,10 @@ public class AuthenticationService {
                 .role(User.Role.ROLE_USER)
                 .sellsyType("prospect")
                 .companyName(request.getCompanyName())
+                .siren(request.getSiren())
                 .build();
+        
+        user.setPhoneNumber(request.getPhone());
         
         userRepository.save(user);
         log.info("Utilisateur enregistré localement avec succès: {}", user.getEmail());
@@ -170,12 +174,43 @@ public class AuthenticationService {
 
     private void registerAsCompany(RegisterRequest request, User user) {
         log.debug("Création de la compagnie Sellsy pour: {}", request.getCompanyName());
-        com.tradeall.tradefood.dto.sellsy.SellsyCompany sellsyCompany = new com.tradeall.tradefood.dto.sellsy.SellsyCompany();
-        sellsyCompany.setName(request.getCompanyName());
-        sellsyCompany.setEmail(request.getEmail());
+        com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest sellsyCompany = new com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest();
+        
+        // Initialisation de tous les champs String à vide par défaut
+        sellsyCompany.setName(request.getCompanyName() != null ? request.getCompanyName() : "");
+        sellsyCompany.setEmail(request.getEmail() != null ? request.getEmail() : "");
         sellsyCompany.setType("prospect");
+        sellsyCompany.setWebsite("");
+        sellsyCompany.setPhone_number(request.getPhone() != null ? request.getPhone() : "");
+        sellsyCompany.setMobile_number("");
+        sellsyCompany.setFax_number("");
+        sellsyCompany.setReference("");
+        sellsyCompany.setNote("");
+
+        com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest.SellsySocialRequest social = new com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest.SellsySocialRequest();
+        social.setFacebook("");
+        social.setTwitter("");
+        social.setLinkedin("");
+        social.setViadeo("");
+        sellsyCompany.setSocial(social);
+
+        com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest.SellsyLegalFranceRequest legal = new com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest.SellsyLegalFranceRequest();
+        String siren = request.getSiren() != null ? request.getSiren() : "";
+        legal.setSiren(siren);
+        legal.setSiret(!siren.isBlank() ? siren + "00000" : "");
+        legal.setVat("FR99999999999");
+        legal.setApe_naf_code("0000C");
+        legal.setCompany_type("SAS");
+        legal.setRcs_immatriculation("RCS xxxxx");
+        sellsyCompany.setLegal_france(legal);
+
+        // Autres champs
+        sellsyCompany.setIs_archived(false);
+        sellsyCompany.setCreated(java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC)
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
 
         try {
+            log.info("Envoi de la requête de création de compagnie à Sellsy: {}", sellsyCompany.getName());
             com.tradeall.tradefood.dto.sellsy.SellsyCompany createdCompany = sellsyClient.createCompany(sellsyCompany).block();
             if (createdCompany != null && createdCompany.getId() != null) {
                 log.info("Compagnie Sellsy créée avec ID: {}", createdCompany.getId());

@@ -11,15 +11,19 @@ public class RegisterRequest {
     private String email;
     private String password;
     private String companyName;
+    private String siren;
+    private String phone;
 
     public RegisterRequest() {}
 
-    public RegisterRequest(String firstName, String lastName, String email, String password, String companyName) {
+    public RegisterRequest(String firstName, String lastName, String email, String password, String companyName, String siren, String phone) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
         this.companyName = companyName;
+        this.siren = siren;
+        this.phone = phone;
     }
 
     public String getFirstName() { return firstName; }
@@ -32,4 +36,8 @@ public class RegisterRequest {
     public void setPassword(String password) { this.password = password; }
     public String getCompanyName() { return companyName; }
     public void setCompanyName(String companyName) { this.companyName = companyName; }
+    public String getSiren() { return siren; }
+    public void setSiren(String siren) { this.siren = siren; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 }

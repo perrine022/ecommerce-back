@@ -3,6 +3,7 @@ package com.tradeall.tradefood.client;
 import com.tradeall.tradefood.dto.sellsy.SellsyCategory;
 import com.tradeall.tradefood.dto.sellsy.SellsyContact;
 import com.tradeall.tradefood.dto.sellsy.SellsyCompany;
+import com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyIndividual;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrder;
 import com.tradeall.tradefood.dto.sellsy.SellsyProduct;
@@ -209,13 +210,19 @@ public class SellsyClient {
      * @param company Les données de la compagnie à créer.
      * @return Un Mono contenant la compagnie créée.
      */
-    public Mono<SellsyCompany> createCompany(SellsyCompany company) {
+    public Mono<SellsyCompany> createCompany(SellsyCompanyRequest company) {
         log.debug("Appel Sellsy POST /companies pour: {}", company.getName());
         return sellsyWebClient.post()
                 .uri("/companies")
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .bodyValue(company)
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy: {}", body);
+                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                    })
+                )
                 .bodyToMono(SellsyCompany.class);
     }
 

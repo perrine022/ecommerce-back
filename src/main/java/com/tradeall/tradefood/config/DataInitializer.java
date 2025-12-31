@@ -58,6 +58,7 @@ public class DataInitializer {
                 perrine.setCreated("2023-10-01T10:00:00Z");
                 perrine.setUpdated("2023-12-30T18:00:00Z");
                 perrine.setMarketingCampaignsSubscriptions(new ArrayList<>());
+                perrine.setActive(true);
 
                 userRepository.save(perrine);
                 System.out.println("Utilisateur par défaut créé : perrine@gmail.com / Perrine");
