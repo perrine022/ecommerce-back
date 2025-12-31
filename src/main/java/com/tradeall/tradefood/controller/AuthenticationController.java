@@ -3,10 +3,12 @@ package com.tradeall.tradefood.controller;
 import com.tradeall.tradefood.dto.auth.AuthenticationRequest;
 import com.tradeall.tradefood.dto.auth.AuthenticationResponse;
 import com.tradeall.tradefood.dto.auth.RegisterRequest;
+import com.tradeall.tradefood.entity.User;
 import com.tradeall.tradefood.service.AuthenticationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -73,6 +75,23 @@ public class AuthenticationController {
     public ResponseEntity<Void> resetPassword(@RequestParam String token, @RequestParam String newPassword) {
         log.info("Requête de réinitialisation de mot de passe avec jeton");
         service.resetPassword(token, newPassword);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Endpoint pour modifier le mot de passe quand l'utilisateur est connecté.
+     * @param user L'utilisateur authentifié.
+     * @param oldPassword L'ancien mot de passe.
+     * @param newPassword Le nouveau mot de passe.
+     * @return Réponse vide.
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal User user,
+            @RequestParam String oldPassword,
+            @RequestParam String newPassword) {
+        log.info("Requête de changement de mot de passe pour l'utilisateur: {}", user.getEmail());
+        service.changePassword(user, oldPassword, newPassword);
         return ResponseEntity.ok().build();
     }
 }

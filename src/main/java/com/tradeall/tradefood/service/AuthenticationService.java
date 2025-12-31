@@ -263,4 +263,16 @@ public class AuthenticationService {
                 .token(jwtToken)
                 .build();
     }
+
+    /**
+     * Modifie le mot de passe d'un utilisateur connecté.
+     */
+    public void changePassword(User user, String oldPassword, String newPassword) {
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("Ancien mot de passe incorrect");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("Mot de passe modifié avec succès pour l'utilisateur: {}", user.getEmail());
+    }
 }

@@ -18,6 +18,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+
 /**
  * Client HTTP pour interagir avec l'API v2 de Sellsy.
  * Fournit des méthodes pour gérer les produits, contacts et commandes.
@@ -31,8 +33,8 @@ public class SellsyClient {
     private final WebClient sellsyWebClient;
     private final SellsyAuthService authService;
 
-    public SellsyClient(WebClient sellsyWebClient, SellsyAuthService authService) {
-        this.sellsyWebClient = sellsyWebClient;
+    public SellsyClient(WebClient webClient, SellsyAuthService authService) {
+        this.sellsyWebClient = webClient;
         this.authService = authService;
     }
 
@@ -223,7 +225,9 @@ public class SellsyClient {
                         return Mono.error(new RuntimeException("Sellsy API Error: " + body));
                     })
                 )
-                .bodyToMono(SellsyCompany.class);
+                .bodyToMono(SellsyCompany.class)
+                .retryWhen(reactor.util.retry.Retry.backoff(3, Duration.ofSeconds(2))
+                        .filter(throwable -> throwable instanceof java.io.IOException || throwable instanceof io.netty.channel.ConnectTimeoutException));
     }
 
     /**
@@ -311,6 +315,12 @@ public class SellsyClient {
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .bodyValue(searchBody)
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy Search: {}", body);
+                        return Mono.error(new RuntimeException("Sellsy API Search Error: " + body));
+                    })
+                )
                 .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyOrder>>() {});
     }
 }
