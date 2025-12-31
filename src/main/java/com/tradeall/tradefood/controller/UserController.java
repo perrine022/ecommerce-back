@@ -89,4 +89,15 @@ public class UserController {
         userService.syncUsers();
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * Déclenche spécifiquement la synchronisation des entreprises (Companies) depuis Sellsy.
+     * @return Réponse vide.
+     */
+    @PostMapping("/sync/companies")
+    public ResponseEntity<Void> syncCompanies() {
+        log.info("Requête manuelle de synchronisation des entreprises Sellsy");
+        userService.syncCompanies();
+        return ResponseEntity.ok().build();
+    }
 }

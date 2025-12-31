@@ -19,8 +19,8 @@ public class SellsyCompany {
     private Boolean is_archived;
     private SellsyLegalFrance legal_france;
     private SellsySocial social;
-    private Integer business_segment;
-    private Integer number_of_employees;
+    private Object business_segment;
+    private Object number_of_employees;
     private SellsyEmbed _embed;
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -127,10 +127,10 @@ public class SellsyCompany {
     public void setLegal_france(SellsyLegalFrance legal_france) { this.legal_france = legal_france; }
     public SellsySocial getSocial() { return social; }
     public void setSocial(SellsySocial social) { this.social = social; }
-    public Integer getBusiness_segment() { return business_segment; }
-    public void setBusiness_segment(Integer business_segment) { this.business_segment = business_segment; }
-    public Integer getNumber_of_employees() { return number_of_employees; }
-    public void setNumber_of_employees(Integer number_of_employees) { this.number_of_employees = number_of_employees; }
+    public Object getBusiness_segment() { return business_segment; }
+    public void setBusiness_segment(Object business_segment) { this.business_segment = business_segment; }
+    public Object getNumber_of_employees() { return number_of_employees; }
+    public void setNumber_of_employees(Object number_of_employees) { this.number_of_employees = number_of_employees; }
     public SellsyEmbed get_embed() { return _embed; }
     public void set_embed(SellsyEmbed _embed) { this._embed = _embed; }
 }

@@ -122,4 +122,16 @@ public class OrderController {
                 "orderId", order.getId().toString()
         ));
     }
+
+    /**
+     * Met à jour les adresses de livraison et de facturation d'une commande.
+     * @param id L'identifiant de la commande.
+     * @param addresses Les adresses à mettre à jour.
+     * @return La commande mise à jour.
+     */
+    @PutMapping("/{id}/addresses")
+    public ResponseEntity<Order> updateAddresses(@PathVariable java.util.UUID id, @RequestBody com.tradeall.tradefood.dto.AddressRequestDTO addresses) {
+        log.info("Mise à jour des adresses pour la commande ID: {}", id);
+        return ResponseEntity.ok(orderService.updateOrderAddresses(id, addresses));
+    }
 }

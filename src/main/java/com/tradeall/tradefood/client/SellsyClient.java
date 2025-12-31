@@ -2,6 +2,7 @@ package com.tradeall.tradefood.client;
 
 import com.tradeall.tradefood.dto.sellsy.SellsyCategory;
 import com.tradeall.tradefood.dto.sellsy.SellsyContact;
+import com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO;
 import com.tradeall.tradefood.dto.sellsy.SellsyCompany;
 import com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyIndividual;
@@ -224,6 +225,60 @@ public class SellsyClient {
                     })
                 )
                 .bodyToMono(SellsyCompany.class);
+    }
+
+    /**
+     * Récupère les adresses d'une compagnie.
+     */
+    public Mono<SellsyResponse<SellsyAddressDTO>> getCompanyAddresses(Long companyId, int limit, int offset) {
+        log.debug("Appel Sellsy GET /companies/{}/addresses", companyId);
+        return sellsyWebClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/companies/" + companyId + "/addresses")
+                        .queryParam("limit", limit)
+                        .queryParam("offset", offset)
+                        .build())
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyAddressDTO>>() {});
+    }
+
+    /**
+     * Crée une adresse pour une compagnie.
+     */
+    public Mono<SellsyAddressDTO> createCompanyAddress(Long companyId, SellsyAddressDTO address) {
+        log.debug("Appel Sellsy POST /companies/{}/addresses", companyId);
+        return sellsyWebClient.post()
+                .uri("/companies/" + companyId + "/addresses")
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .bodyValue(address)
+                .retrieve()
+                .bodyToMono(SellsyAddressDTO.class);
+    }
+
+    /**
+     * Met à jour une adresse d'une compagnie.
+     */
+    public Mono<SellsyAddressDTO> updateCompanyAddress(Long companyId, Long addressId, SellsyAddressDTO address) {
+        log.debug("Appel Sellsy PUT /companies/{}/addresses/{}", companyId, addressId);
+        return sellsyWebClient.put()
+                .uri("/companies/" + companyId + "/addresses/" + addressId)
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .bodyValue(address)
+                .retrieve()
+                .bodyToMono(SellsyAddressDTO.class);
+    }
+
+    /**
+     * Supprime une adresse d'une compagnie.
+     */
+    public Mono<Void> deleteCompanyAddress(Long companyId, Long addressId) {
+        log.debug("Appel Sellsy DELETE /companies/{}/addresses/{}", companyId, addressId);
+        return sellsyWebClient.delete()
+                .uri("/companies/" + companyId + "/addresses/" + addressId)
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .retrieve()
+                .bodyToMono(Void.class);
     }
 
     /**

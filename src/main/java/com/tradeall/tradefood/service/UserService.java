@@ -130,7 +130,7 @@ public class UserService {
         syncIndividuals(0, 100);
     }
 
-    private void syncCompanies() {
+    public void syncCompanies() {
         syncCompanies(0, 100);
     }
 

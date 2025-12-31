@@ -122,7 +122,7 @@ public class OrderService {
      * Finalise une commande après paiement (passe le statut à PAID et synchronise avec Sellsy).
      * @param orderId L'identifiant de la commande à finaliser.
      */
-    public void finalizeOrder(UUID orderId) {
+    public void finalizeOrder(java.util.UUID orderId) {
         log.debug("Finalisation de la commande ID: {}", orderId);
         Order order = orderRepository.findById(orderId).orElseThrow(() -> {
             log.error("Impossible de finaliser, commande non trouvée ID: {}", orderId);
@@ -134,6 +134,20 @@ public class OrderService {
         log.info("Commande ID: {} marquée comme PAYÉE", orderId);
         
         createSellsyOrder(order);
+    }
+
+    /**
+     * Met à jour les adresses de facturation et de livraison d'une commande.
+     * @param orderId L'identifiant de la commande.
+     * @param addresses Les nouveaux identifiants d'adresse.
+     * @return La commande mise à jour.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public Order updateOrderAddresses(java.util.UUID orderId, com.tradeall.tradefood.dto.AddressRequestDTO addresses) {
+        Order order = getOrderById(orderId);
+        order.setInvoicingAddressId(addresses.getInvoicingAddressId());
+        order.setDeliveryAddressId(addresses.getDeliveryAddressId());
+        return orderRepository.save(order);
     }
 
     /**
@@ -157,6 +171,14 @@ public class OrderService {
         
         sellsyOrder.setSubject("Commande Tradefood #" + order.getId());
         sellsyOrder.setDate(java.time.LocalDate.now().toString());
+        
+        // Ajout des adresses de facturation et de livraison
+        if (order.getInvoicingAddressId() != null) {
+            sellsyOrder.setInvoicing_address_id(order.getInvoicingAddressId());
+        }
+        if (order.getDeliveryAddressId() != null) {
+            sellsyOrder.setDelivery_address_id(order.getDeliveryAddressId());
+        }
 
         log.debug("Préparation des lignes de commande pour Sellsy");
         List<SellsyOrder.SellsyRow> rows = order.getItems().stream()
