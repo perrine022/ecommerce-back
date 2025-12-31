@@ -2,6 +2,7 @@ package com.tradeall.tradefood.service;
 
 import com.tradeall.tradefood.client.SellsyClient;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrder;
+import com.tradeall.tradefood.dto.sellsy.SellsyOrderRequest;
 import com.tradeall.tradefood.entity.Order;
 import com.tradeall.tradefood.entity.OrderItem;
 import com.tradeall.tradefood.entity.User;
@@ -157,14 +158,14 @@ public class OrderService {
     private void createSellsyOrder(Order order) {
         log.debug("Début de la création de la commande Sellsy pour la commande locale ID: {}", order.getId());
         
-        SellsyOrder sellsyOrder = new SellsyOrder();
+        SellsyOrderRequest sellsyOrder = new SellsyOrderRequest();
         
         if (order.getUser().getSellsyId() == null) {
             log.error("L'utilisateur {} n'a pas de SellsyId. Impossible de créer la commande Sellsy.", order.getUser().getEmail());
             return;
         }
         
-        SellsyOrder.SellsyRelated related = new SellsyOrder.SellsyRelated();
+        SellsyOrderRequest.SellsyRelated related = new SellsyOrderRequest.SellsyRelated();
         related.setId(order.getUser().getSellsyId());
         related.setType(order.getUser().getSellsyType() != null ? order.getUser().getSellsyType() : "contact");
         sellsyOrder.setRelated(Collections.singletonList(related));
@@ -181,9 +182,9 @@ public class OrderService {
         }
 
         log.debug("Préparation des lignes de commande pour Sellsy");
-        List<SellsyOrder.SellsyRow> rows = order.getItems().stream()
+        List<SellsyOrderRequest.SellsyRowRequest> rows = order.getItems().stream()
                 .map(item -> {
-                    SellsyOrder.SellsyRow row = new SellsyOrder.SellsyRow();
+                    SellsyOrderRequest.SellsyRowRequest row = new SellsyOrderRequest.SellsyRowRequest();
                     row.setType("single");
                     row.setReference(item.getProduct().getReference());
                     row.setQuantity(item.getQuantity().toString());
@@ -210,6 +211,21 @@ public class OrderService {
                 log.error("Erreur lors de la création de la commande Sellsy pour la commande locale ID: {}. Erreur: {}", order.getId(), error.getMessage());
             }
         );
+    }
+
+    /**
+     * Crée manuellement une commande à partir d'un panier (sans Stripe).
+     */
+    @Transactional
+    public Order createManualOrder(com.tradeall.tradefood.entity.Cart cart, com.tradeall.tradefood.dto.OrderCreateRequest request) {
+        Order order = createOrderFromCart(cart);
+        order.setInvoicingAddressId(request.getInvoicingAddressId());
+        order.setDeliveryAddressId(request.getDeliveryAddressId());
+        order.setStatus(Order.OrderStatus.PAID); // On la considère payée pour le moment
+        Order savedOrder = orderRepository.save(order);
+        
+        createSellsyOrder(savedOrder);
+        return savedOrder;
     }
 
     /**

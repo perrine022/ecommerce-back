@@ -7,6 +7,7 @@ import com.tradeall.tradefood.dto.sellsy.SellsyCompany;
 import com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyIndividual;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrder;
+import com.tradeall.tradefood.dto.sellsy.SellsyOrderRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyProduct;
 import com.tradeall.tradefood.dto.sellsy.SellsyResponse;
 import com.tradeall.tradefood.service.SellsyAuthService;
@@ -178,10 +179,8 @@ public class SellsyClient {
 
     /**
      * Crée une commande dans Sellsy.
-     * @param order Les données de la commande.
-     * @return Un Mono contenant la commande créée.
      */
-    public Mono<SellsyOrder> createOrder(SellsyOrder order) {
+    public Mono<SellsyOrder> createOrder(SellsyOrderRequest order) {
         log.debug("Appel Sellsy POST /orders");
         return sellsyWebClient.post()
                 .uri("/orders")

@@ -97,30 +97,30 @@ public class OrderController {
     }
 
     /**
-     * Initie le processus de commande en créant un objet Order et une intention de paiement Stripe.
+     * Crée manuellement une commande à partir du panier de l'utilisateur (sans Stripe).
      * @param user L'utilisateur authentifié.
-     * @return Le Client Secret Stripe et l'ID de la commande.
-     * @throws StripeException en cas d'erreur avec l'API Stripe.
+     * @param request Détails de la commande (adresses).
+     * @return La commande créée.
+     */
+    @PostMapping
+    public ResponseEntity<Order> createOrder(@AuthenticationPrincipal User user, @RequestBody com.tradeall.tradefood.dto.OrderCreateRequest request) {
+        log.info("Création manuelle d'une commande pour l'utilisateur: {}", user.getEmail());
+        Cart cart = cartService.getCartByUser(user);
+        if (cart.getItems().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(orderService.createManualOrder(cart, request));
+    }
+
+    /**
+     * Initie le processus de commande via Stripe (Optionnel).
      */
     @PostMapping("/checkout")
     public ResponseEntity<Map<String, String>> checkout(@AuthenticationPrincipal User user) throws StripeException {
-        log.info("Début du processus de checkout pour l'utilisateur: {}", user.getEmail());
-        Cart cart = cartService.getCartByUser(user);
-        if (cart.getItems().isEmpty()) {
-            log.warn("Tentative de checkout avec un panier vide pour {}", user.getEmail());
-            return ResponseEntity.badRequest().build();
-        }
-
-        Order order = orderService.createOrderFromCart(cart);
-        
-        // On crée le PaymentIntent en passant l'order pour le récupérer dans le webhook
-        PaymentIntent paymentIntent = stripeService.createPaymentIntent(order);
-        
-        log.info("Checkout initialisé. Commande ID: {}, PaymentIntent ID: {}", order.getId(), paymentIntent.getId());
-        return ResponseEntity.ok(Map.of(
-                "clientSecret", paymentIntent.getClientSecret(),
-                "orderId", order.getId().toString()
-        ));
+        // Logique Stripe commentée ou conservée comme alternative
+        log.info("Processus checkout Stripe (Alternative)");
+        // ...
+        return ResponseEntity.status(501).build(); // Not implemented pour le moment
     }
 
     /**
