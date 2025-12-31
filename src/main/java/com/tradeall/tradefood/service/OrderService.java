@@ -258,17 +258,9 @@ public class OrderService {
             return;
         }
 
-        String type = user.getSellsyType() != null ? user.getSellsyType() : "individual";
-        if ("contact".equals(type) || "prospect".equals(type)) {
-            type = "individual";
-        }
-        if ("company".equals(type)) {
-            type = "client";
-        }
-        
         Map<String, Object> filters = new HashMap<>();
         filters.put("related_objects", Collections.singletonList(Map.of(
-                "type", type,
+                "type", "company",
                 "id", user.getSellsyId()
         )));
         
