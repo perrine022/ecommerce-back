@@ -39,8 +39,8 @@ public class SellsyAuthService {
 
     private final WebClient webClient;
 
-    public SellsyAuthService(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.build();
+    public SellsyAuthService(@org.springframework.beans.factory.annotation.Qualifier("authWebClient") WebClient webClient) {
+        this.webClient = webClient;
     }
 
     /**
@@ -60,7 +60,7 @@ public class SellsyAuthService {
      * @return Un Mono contenant le nouveau jeton d'accès.
      */
     private Mono<String> refreshAccessToken() {
-        log.debug("Appel de l'URL d'authentification Sellsy: {}", authUrl);
+        log.debug("Rafraîchissement du jeton Sellsy via {}", authUrl);
         
         AuthRequest request;
         if (currentRefreshToken != null || (refreshToken != null && !refreshToken.isEmpty())) {
@@ -73,7 +73,7 @@ public class SellsyAuthService {
         }
 
         return webClient.post()
-                .uri(authUrl)
+                .uri("") // La baseUrl est déjà positionnée sur l'URL d'auth via WebClientConfig
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(AuthResponse.class)

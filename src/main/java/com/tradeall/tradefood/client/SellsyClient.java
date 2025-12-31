@@ -34,6 +34,7 @@ public class SellsyClient {
     private final SellsyAuthService authService;
 
     public SellsyClient(WebClient webClient, SellsyAuthService authService) {
+        // Injection du WebClient principal (Primary) configuré avec sellsy.base-url
         this.sellsyWebClient = webClient;
         this.authService = authService;
     }
