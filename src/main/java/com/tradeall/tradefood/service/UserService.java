@@ -444,6 +444,13 @@ public class UserService {
         user.setSyncSimplemail(contact.getSyncSimplemail());
         user.setOwnerId(contact.getOwnerId());
         user.setOwnerType(contact.getOwnerType());
+
+        // Association du commercial basé sur l'ownerId
+        if (contact.getOwnerId() != null) {
+            userRepository.findBySellsyId(contact.getOwnerId())
+                    .ifPresent(user::setCommercial);
+        }
+
         user.setCreated(contact.getCreated());
         user.setUpdated(contact.getUpdated());
         user.setIsArchived(contact.getIsArchived());
@@ -491,6 +498,13 @@ public class UserService {
         user.setSyncSimplemail(individual.getSyncSimplemail());
         user.setOwnerId(individual.getOwnerId());
         user.setOwnerType(individual.getOwnerType());
+
+        // Association du commercial basé sur l'ownerId
+        if (individual.getOwnerId() != null) {
+            userRepository.findBySellsyId(individual.getOwnerId())
+                    .ifPresent(user::setCommercial);
+        }
+
         user.setCreated(individual.getCreated());
         user.setUpdated(individual.getUpdated());
         user.setIsArchived(individual.getIsArchived());
@@ -537,6 +551,13 @@ public class UserService {
         user.setViadeo(company.getViadeo());
         user.setOwnerId(company.getOwnerId());
         user.setOwnerType(company.getOwnerType());
+
+        // Association du commercial basé sur l'ownerId
+        if (company.getOwnerId() != null) {
+            userRepository.findBySellsyId(company.getOwnerId())
+                    .ifPresent(user::setCommercial);
+        }
+
         user.setCreated(company.getCreated());
         user.setUpdated(company.getUpdated());
         user.setIsArchived(company.getIsArchived());
