@@ -117,8 +117,10 @@ public class OrderController {
             return ResponseEntity.badRequest().build();
         }
         Order createdOrder = orderService.createManualOrder(user, request);
-        log.info("Commande créée avec succès via API. ID commande: {}, Utilisateur: {}", createdOrder.getId(), user.getEmail());
-        return ResponseEntity.ok(createdOrder);
+        // On s'assure que l'ordre renvoyé est "frais" pour éviter les proxies Hibernate dans la réponse JSON
+        Order responseOrder = orderService.getOrderById(createdOrder.getId());
+        log.info("Commande créée avec succès via API. ID commande: {}, Utilisateur: {}", responseOrder.getId(), user.getEmail());
+        return ResponseEntity.ok(responseOrder);
     }
 
     /**

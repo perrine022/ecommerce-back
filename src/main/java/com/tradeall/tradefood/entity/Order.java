@@ -1,6 +1,7 @@
 package com.tradeall.tradefood.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ public class Order {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
 
     @Column(name = "order_date")
@@ -178,6 +180,7 @@ public class Order {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
     public LocalDateTime getOrderDate() { return orderDate; }
