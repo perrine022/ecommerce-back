@@ -462,6 +462,7 @@ public class UserService {
         user.setVatNumber(company.getVat());
         user.setRcs(company.getRcsImmatriculation());
         user.setLegalForm(company.getCompanyType());
+        user.setApeNafCode(company.getApeNafCode());
         user.setSellsyId(company.getSellsyId());
         user.setSellsyType(company.getType()); // Utiliser le type réel de Sellsy (prospect ou client)
         

@@ -26,7 +26,7 @@ public class SireneService {
     @Value("${sirene.api.key:2b90ec68-758c-471d-90ec-68758cf71dd4}")
     private String apiKey;
 
-    @Value("${sirene.api.url.siret:https://api.insee.fr/api-sirene/3.11/siret}")
+    @Value("${sirene.api.url:https://api.insee.fr/api-sirene/3.11/siret}")
     private String apiUrlSiret;
 
     @Value("${sirene.api.url.siren:https://api.insee.fr/api-sirene/3.11/siren}")
@@ -77,8 +77,8 @@ public class SireneService {
         }
     }
 
-    public SireneCompanyInfoDTO validateSirene(String siren) {
-        log.info("Validation SIREN: {}", siren);
+    public SireneCompanyInfoDTO validateSirene(String id) {
+        log.info("Validation SIREN/SIRET: {}", id);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-INSEE-Api-Key-Integration", apiKey);
@@ -86,8 +86,10 @@ public class SireneService {
 
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        String url = String.format("%s/%s?masquerValeursNulles=false", apiUrlSiret, siren);
-        log.debug("URL d'appel SIREN : {}", url);
+        // Si l'id fait 9 caractères, c'est un SIREN, sinon on considère que c'est un SIRET (14 caractères)
+        String baseUrl = (id != null && id.length() == 9) ? apiUrlSiren : apiUrlSiret;
+        String url = String.format("%s/%s?masquerValeursNulles=false", baseUrl, id);
+        log.debug("URL d'appel SIRENE : {}", url);
 
         try {
             ResponseEntity<SireneResponseDTO> response = restTemplate.exchange(
@@ -98,20 +100,25 @@ public class SireneService {
             );
 
             SireneResponseDTO body = response.getBody();
-            if (body == null || body.getUniteLegale() == null) {
-                throw new RuntimeException("Aucune unité légale trouvée pour ce SIREN.");
+            if (body == null || (body.getUniteLegale() == null && body.getEtablissement() == null)) {
+                throw new RuntimeException("Aucune donnée trouvée pour cet identifiant.");
             }
 
-            Map<String, Object> uniteLegale = body.getUniteLegale();
+            Map<String, Object> data = body.getUniteLegale() != null ? body.getUniteLegale() : body.getEtablissement();
 
-            if (!isValidCompany(uniteLegale)) {
+            // Si c'est un établissement (SIRET), l'unité légale est souvent imbriquée
+            if (body.getEtablissement() != null && data.containsKey("uniteLegale")) {
+                data = (Map<String, Object>) data.get("uniteLegale");
+            }
+
+            if (!isValidCompany(data)) {
                 throw new RuntimeException("L'entreprise ne respecte pas les critères de validation (active, > 2 ans, etc.).");
             }
 
-            return extractCompanyInfo(uniteLegale, siren);
+            return extractCompanyInfo(data, id);
         } catch (Exception e) {
-            log.error("Erreur lors de l'appel à l'API SIREN pour {}", siren, e);
-            throw new RuntimeException("Erreur lors de la validation du SIREN: " + e.getMessage());
+            log.error("Erreur lors de l'appel à l'API SIRENE pour {}", id, e);
+            throw new RuntimeException("Erreur lors de la validation : " + e.getMessage());
         }
     }
 
@@ -162,28 +169,39 @@ public class SireneService {
         return true;
     }
 
-    private SireneCompanyInfoDTO extractCompanyInfo(Map<String, Object> ul, String siren) {
-            String name = "";
-        
+    private SireneCompanyInfoDTO extractCompanyInfo(Map<String, Object> data, String id) {
+        String name = "";
+        String apeCode = "";
+
+        // Si c'est un établissement, on cherche dans activitePrincipaleNAF25Etablissement
+        if (data.containsKey("activitePrincipaleNAF25Etablissement")) {
+            apeCode = (String) data.get("activitePrincipaleNAF25Etablissement");
+        }
+
+        // Si c'est une unité légale, on cherche dans activitePrincipaleUniteLegale
+        if ((apeCode == null || apeCode.isEmpty()) && data.containsKey("activitePrincipaleUniteLegale")) {
+            apeCode = (String) data.get("activitePrincipaleUniteLegale");
+        }
+
         // Extraction du nom depuis les périodes (denominationUniteLegale)
-        List<Map<String, Object>> periodes = (List<Map<String, Object>>) ul.get("periodesUniteLegale");
+        List<Map<String, Object>> periodes = (List<Map<String, Object>>) data.get("periodesUniteLegale");
         if (periodes != null && !periodes.isEmpty()) {
             Map<String, Object> periodeActuelle = periodes.get(0);
             name = (String) periodeActuelle.get("denominationUniteLegale");
         }
-        
+
         // Fallback si denominationUniteLegale est vide dans la période
         if (name == null || name.isEmpty()) {
-            name = (String) ul.get("denominationUniteLegale");
+            name = (String) data.get("denominationUniteLegale");
         }
 
         // Fallback si toujours vide (cas des personnes physiques)
         if (name == null || name.isEmpty()) {
-            String nom = (String) ul.get("nomUniteLegale");
-            String prenom = (String) ul.get("prenom1UniteLegale");
+            String nom = (String) data.get("nomUniteLegale");
+            String prenom = (String) data.get("prenom1UniteLegale");
             name = (prenom != null ? prenom + " " : "") + (nom != null ? nom : "");
         }
 
-        return new SireneCompanyInfoDTO(name.trim(), "Adresse non disponible via endpoint SIREN", siren);
+        return new SireneCompanyInfoDTO(name.trim(), "Adresse non disponible via endpoint SIREN", id, apeCode);
     }
 }

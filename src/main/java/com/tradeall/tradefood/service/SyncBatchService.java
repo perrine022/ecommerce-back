@@ -27,6 +27,21 @@ public class SyncBatchService {
     public void initSync() {
         log.info("Lancement de la synchronisation initiale au démarrage...");
         categoryService.syncCategoriesV1();
+        userService.syncUsers();
+    }
+
+    /**
+     * Exécute la synchronisation des utilisateurs toutes les 15 minutes.
+     */
+    @Scheduled(fixedRate = 900000) // 15 minutes en millisecondes
+    public void runFrequentSync() {
+        log.info("Lancement de la synchronisation fréquente des utilisateurs...");
+        try {
+            userService.syncUsers();
+            log.info("Synchronisation fréquente terminée.");
+        } catch (Exception e) {
+            log.error("Erreur lors de la synchronisation fréquente: {}", e.getMessage());
+        }
     }
 
     /**

@@ -140,6 +140,9 @@ public class User implements UserDetails {
     @Column(name = "legal_form")
     private String legalForm;
 
+    @Column(name = "ape_naf_code")
+    private String apeNafCode;
+
     @Column(name = "active")
     private Boolean active = false;
 
@@ -301,6 +304,14 @@ public class User implements UserDetails {
         this.legalForm = legalForm;
     }
 
+    public String getApeNafCode() {
+        return apeNafCode;
+    }
+
+    public void setApeNafCode(String apeNafCode) {
+        this.apeNafCode = apeNafCode;
+    }
+
     public Boolean getActive() {
         return active;
     }
@@ -367,6 +378,7 @@ public class User implements UserDetails {
         private String vatNumber;
         private String rcs;
         private String legalForm;
+        private String apeNafCode;
 
         public UserBuilder id(UUID id) { this.id = id; return this; }
         public UserBuilder sellsyId(Long sellsyId) { this.sellsyId = sellsyId; return this; }
@@ -381,6 +393,7 @@ public class User implements UserDetails {
         public UserBuilder vatNumber(String vatNumber) { this.vatNumber = vatNumber; return this; }
         public UserBuilder rcs(String rcs) { this.rcs = rcs; return this; }
         public UserBuilder legalForm(String legalForm) { this.legalForm = legalForm; return this; }
+        public UserBuilder apeNafCode(String apeNafCode) { this.apeNafCode = apeNafCode; return this; }
 
         public User build() {
             User user = new User();
@@ -397,6 +410,7 @@ public class User implements UserDetails {
             user.setVatNumber(vatNumber);
             user.setRcs(rcs);
             user.setLegalForm(legalForm);
+            user.setApeNafCode(apeNafCode);
             return user;
         }
     }

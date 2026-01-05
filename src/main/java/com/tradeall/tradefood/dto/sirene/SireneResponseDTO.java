@@ -11,6 +11,7 @@ import java.util.Map;
 public class SireneResponseDTO {
     private SireneHeaderDTO header;
     private List<Map<String, Object>> etablissements;
+    private Map<String, Object> etablissement;
     private Map<String, Object> uniteLegale;
 
     public SireneResponseDTO() {}
@@ -20,6 +21,9 @@ public class SireneResponseDTO {
 
     public List<Map<String, Object>> getEtablissements() { return etablissements; }
     public void setEtablissements(List<Map<String, Object>> etablissements) { this.etablissements = etablissements; }
+
+    public Map<String, Object> getEtablissement() { return etablissement; }
+    public void setEtablissement(Map<String, Object> etablissement) { this.etablissement = etablissement; }
 
     public Map<String, Object> getUniteLegale() { return uniteLegale; }
     public void setUniteLegale(Map<String, Object> uniteLegale) { this.uniteLegale = uniteLegale; }

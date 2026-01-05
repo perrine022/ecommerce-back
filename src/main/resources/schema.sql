@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS users (
     vat_number VARCHAR(50),
     rcs VARCHAR(255),
     legal_form VARCHAR(50),
+    ape_naf_code VARCHAR(20),
     active BOOLEAN DEFAULT FALSE,
     premium_enabled BOOLEAN DEFAULT FALSE,
     subscription_status VARCHAR(50),

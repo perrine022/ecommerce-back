@@ -39,6 +39,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final com.tradeall.tradefood.client.SellsyClient sellsyClient;
     private final com.tradeall.tradefood.repository.PasswordResetTokenRepository tokenRepository;
+    private final SireneService sireneService;
 
     public AuthenticationService(UserRepository userRepository, 
                                  ContactSellsyRepository contactSellsyRepository,
@@ -48,7 +49,8 @@ public class AuthenticationService {
                                  JwtService jwtService, 
                                  AuthenticationManager authenticationManager, 
                                  com.tradeall.tradefood.client.SellsyClient sellsyClient, 
-                                 com.tradeall.tradefood.repository.PasswordResetTokenRepository tokenRepository) {
+                                 com.tradeall.tradefood.repository.PasswordResetTokenRepository tokenRepository,
+                                 SireneService sireneService) {
         this.userRepository = userRepository;
         this.contactSellsyRepository = contactSellsyRepository;
         this.individualSellsyRepository = individualSellsyRepository;
@@ -58,6 +60,7 @@ public class AuthenticationService {
         this.authenticationManager = authenticationManager;
         this.sellsyClient = sellsyClient;
         this.tokenRepository = tokenRepository;
+        this.sireneService = sireneService;
     }
 
     /**
@@ -115,6 +118,18 @@ public class AuthenticationService {
      */
     public AuthenticationResponse register(RegisterRequest request) {
         log.debug("Inscription d'un nouvel utilisateur: {}", request.getEmail());
+        
+        String apeCode = "";
+        if (request.getSiret() != null && !request.getSiret().isBlank()) {
+            try {
+                var sireneInfo = sireneService.validateSirene(request.getSiret());
+                apeCode = sireneInfo.getApeCode();
+                log.info("Code APE récupéré de Sirene pour {}: {}", request.getSiret(), apeCode);
+            } catch (Exception e) {
+                log.warn("Impossible de récupérer le code APE pour {}: {}", request.getSiret(), e.getMessage());
+            }
+        }
+
         var user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
@@ -127,6 +142,7 @@ public class AuthenticationService {
                 .vatNumber(request.getVatNumber())
                 .rcs(request.getRcs())
                 .legalForm(request.getLegalForm())
+                .apeNafCode(apeCode)
                 .build();
         
         user.setPhoneNumber(request.getPhone());
@@ -208,7 +224,7 @@ public class AuthenticationService {
         legal.setVat(request.getVatNumber() != null ? request.getVatNumber() : "");
         legal.setRcs_immatriculation(request.getRcs() != null ? request.getRcs() : "");
         legal.setCompany_type(request.getLegalForm() != null ? request.getLegalForm() : "");
-        legal.setApe_naf_code(""); // Non fourni par le front pour le moment
+        legal.setApe_naf_code(user.getApeNafCode() != null ? user.getApeNafCode() : "");
         sellsyCompany.setLegal_france(legal);
 
         // Autres champs
@@ -240,6 +256,7 @@ public class AuthenticationService {
                     companyEntity.setVat(createdCompany.getLegal_france().getVat());
                     companyEntity.setRcsImmatriculation(createdCompany.getLegal_france().getRcs_immatriculation());
                     companyEntity.setCompanyType(createdCompany.getLegal_france().getCompany_type());
+                    companyEntity.setApeNafCode(createdCompany.getLegal_france().getApe_naf_code());
                 }
                 
                 companySellsyRepository.save(companyEntity);
