@@ -1,5 +1,6 @@
 package com.tradeall.tradefood.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -148,6 +149,7 @@ public class Order {
     @Column(name = "sellsy_order_doc_type")
     private String sellsyOrderDocType; // estimate, order, invoice
 
+    @JsonManagedReference
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> items = new ArrayList<>();
 

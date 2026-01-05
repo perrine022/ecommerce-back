@@ -104,11 +104,21 @@ public class OrderController {
      */
     @PostMapping
     public ResponseEntity<Order> createOrder(@AuthenticationPrincipal User user, @RequestBody com.tradeall.tradefood.dto.OrderCreateRequest request) {
-        log.info("Création manuelle d'une commande pour l'utilisateur: {}", user.getEmail());
+        log.info("Réception d'une requête de création de commande pour l'utilisateur: {}", user.getEmail());
+        try {
+            String requestJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(request);
+            log.info("[API] Payload reçu pour création de commande: {}", requestJson);
+        } catch (Exception e) {
+            log.warn("[API] Impossible de loguer le payload de la requête: {}", e.getMessage());
+        }
+
         if (request.getItems() == null || request.getItems().isEmpty()) {
+            log.warn("Requête de création de commande rejetée : la liste des articles est vide pour l'utilisateur {}", user.getEmail());
             return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(orderService.createManualOrder(user, request));
+        Order createdOrder = orderService.createManualOrder(user, request);
+        log.info("Commande créée avec succès via API. ID commande: {}, Utilisateur: {}", createdOrder.getId(), user.getEmail());
+        return ResponseEntity.ok(createdOrder);
     }
 
     /**

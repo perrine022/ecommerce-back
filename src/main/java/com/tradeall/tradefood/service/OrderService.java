@@ -107,7 +107,7 @@ public class OrderService {
      */
     @Transactional
     public Order createOrderFromCart(com.tradeall.tradefood.entity.Cart cart) {
-        log.debug("Création d'une commande à partir du panier de l'utilisateur: {}", cart.getUser().getEmail());
+        log.info("Début de la création d'une commande à partir du panier de l'utilisateur: {}", cart.getUser().getEmail());
         Order order = Order.builder()
                 .user(cart.getUser())
                 .orderDate(LocalDateTime.now())
@@ -117,6 +117,7 @@ public class OrderService {
                 .items(new ArrayList<>())
                 .build();
 
+        log.debug("Conversion de {} articles du panier en articles de commande", cart.getItems().size());
         order.setItems(cart.getItems().stream()
                 .map(cartItem -> {
                     Double price = Double.parseDouble(cartItem.getProduct().getReferencePrice() != null ? cartItem.getProduct().getReferencePrice() : "0");
@@ -130,7 +131,8 @@ public class OrderService {
                 .collect(Collectors.toList()));
 
         Order savedOrder = orderRepository.save(order);
-        log.info("Commande créée avec succès, ID: {}, Statut: {}", savedOrder.getId(), savedOrder.getStatus());
+        log.info("Commande créée à partir du panier avec succès. ID: {}, Statut: {}, Montant: {}", 
+                savedOrder.getId(), savedOrder.getStatus(), savedOrder.getTotalAmount());
         return savedOrder;
     }
 
@@ -196,7 +198,7 @@ public class OrderService {
         
         SellsyOrderRequest.SellsyRelated related = new SellsyOrderRequest.SellsyRelated();
         related.setId(order.getUser().getSellsyId());
-        related.setType(order.getUser().getSellsyType() != null ? order.getUser().getSellsyType() : "contact");
+        related.setType("company");
         sellsyOrder.setRelated(Collections.singletonList(related));
         
         sellsyOrder.setSubject("Commande Tradefood #" + order.getId());
@@ -240,6 +242,13 @@ public class OrderService {
                 .collect(Collectors.toList());
         
         sellsyOrder.setRows(rows);
+
+        try {
+            String jsonPayload = sellsyClient.serializeToJson(sellsyOrder);
+            log.info("[SELLSY] Payload envoyé pour la commande locale {}: {}", order.getId(), jsonPayload);
+        } catch (Exception e) {
+            log.warn("[SELLSY] Impossible de sérialiser le payload pour les logs: {}", e.getMessage());
+        }
         
         sellsyClient.createOrder(sellsyOrder).subscribe(
             response -> {
@@ -250,6 +259,10 @@ public class OrderService {
             },
             error -> {
                 log.error("Erreur lors de la création de la commande Sellsy pour la commande locale ID: {}. Erreur: {}", order.getId(), error.getMessage());
+                if (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
+                    org.springframework.web.reactive.function.client.WebClientResponseException we = (org.springframework.web.reactive.function.client.WebClientResponseException) error;
+                    log.error("[SELLSY] Réponse d'erreur Sellsy: {}", we.getResponseBodyAsString());
+                }
             }
         );
     }
@@ -259,15 +272,21 @@ public class OrderService {
      */
     @Transactional
     public Order createManualOrder(User authenticatedUser, com.tradeall.tradefood.dto.OrderCreateRequest request) {
+        log.info("Début de la création manuelle d'une commande par l'utilisateur: {}", authenticatedUser.getEmail());
         User orderUser = authenticatedUser;
 
         // Si c'est un commercial qui passe commande pour un client
         if (authenticatedUser.getRole() == User.Role.ROLE_COMMERCIAL && request.getClientId() != null) {
+            log.info("Commercial {} crée une commande pour le client ID: {}", authenticatedUser.getEmail(), request.getClientId());
             User client = userRepository.findById(request.getClientId())
-                    .orElseThrow(() -> new RuntimeException("Client non trouvé : " + request.getClientId()));
+                    .orElseThrow(() -> {
+                        log.error("Client non trouvé avec l'ID: {}", request.getClientId());
+                        return new RuntimeException("Client non trouvé : " + request.getClientId());
+                    });
             
             // Vérifier que le client est bien rattaché au commercial (optionnel mais recommandé pour la sécurité)
             if (client.getCommercial() == null || !client.getCommercial().getId().equals(authenticatedUser.getId())) {
+                log.error("Le client {} n'est pas rattaché au commercial {}", client.getEmail(), authenticatedUser.getEmail());
                 throw new RuntimeException("Le client n'est pas rattaché à ce commercial");
             }
             orderUser = client;
@@ -284,9 +303,13 @@ public class OrderService {
         List<OrderItem> items = new ArrayList<>();
         double total = 0;
         
+        log.info("Traitement de {} articles pour la commande", request.getItems().size());
         for (com.tradeall.tradefood.dto.OrderCreateRequest.ProductItemRequest itemReq : request.getItems()) {
             Product product = productRepository.findById(itemReq.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Produit non trouvé : " + itemReq.getProductId()));
+                    .orElseThrow(() -> {
+                        log.error("Produit non trouvé avec l'ID: {}", itemReq.getProductId());
+                        return new RuntimeException("Produit non trouvé : " + itemReq.getProductId());
+                    });
             
             OrderItem item = new OrderItem();
             item.setOrder(order);
@@ -304,12 +327,15 @@ public class OrderService {
             
             items.add(item);
             total += price * itemReq.getQuantity();
+            log.debug("Article ajouté: {} (Quantité: {}, Prix Unitaire: {})", product.getName(), itemReq.getQuantity(), price);
         }
         
         order.setItems(items);
         order.setTotalAmount(total);
         
         Order savedOrder = orderRepository.save(order);
+        log.info("Commande manuelle créée avec succès. ID: {}, Utilisateur: {}, Montant Total: {}", 
+                savedOrder.getId(), orderUser.getEmail(), total);
         createSellsyOrder(savedOrder);
         return savedOrder;
     }

@@ -69,7 +69,7 @@ public class SellsyClient {
                 .doOnNext(response -> log.debug("Réponse Sellsy v1 Catégories: {}", response.getResponse()));
     }
 
-    private String serializeToJson(Object obj) {
+    public String serializeToJson(Object obj) {
         try {
             return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(obj);
         } catch (Exception e) {
