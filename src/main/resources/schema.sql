@@ -34,7 +34,15 @@ CREATE TABLE IF NOT EXISTS users (
     is_archived BOOLEAN,
     role VARCHAR(50),
     sellsy_type VARCHAR(50),
-    company_name VARCHAR(255)
+    company_name VARCHAR(255),
+    siret VARCHAR(50),
+    vat_number VARCHAR(50),
+    rcs VARCHAR(255),
+    legal_form VARCHAR(50),
+    active BOOLEAN DEFAULT FALSE,
+    premium_enabled BOOLEAN DEFAULT FALSE,
+    subscription_status VARCHAR(50),
+    subscription_date DATETIME
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS user_marketing_campaigns (
@@ -261,7 +269,6 @@ CREATE TABLE IF NOT EXISTS companies_sellsy (
     updated VARCHAR(50),
     is_archived BOOLEAN,
     siret VARCHAR(50),
-    siren VARCHAR(50),
     vat VARCHAR(50),
     ape_naf_code VARCHAR(20),
     company_type VARCHAR(50),

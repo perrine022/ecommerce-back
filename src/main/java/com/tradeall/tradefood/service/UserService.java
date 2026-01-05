@@ -305,7 +305,6 @@ public class UserService {
 
                                 if (dto.getLegal_france() != null) {
                                     company.setSiret(dto.getLegal_france().getSiret());
-                                    company.setSiren(dto.getLegal_france().getSiren());
                                     company.setVat(dto.getLegal_france().getVat());
                                     company.setApeNafCode(dto.getLegal_france().getApe_naf_code());
                                     company.setCompanyType(dto.getLegal_france().getCompany_type());
@@ -458,8 +457,11 @@ public class UserService {
                     return newUser;
                 });
 
-        user.setFirstName(""); // Les compagnies n'ont pas de prénom
-        user.setLastName(company.getName());
+        user.setCompanyName(company.getName());
+        user.setSiret(company.getSiret());
+        user.setVatNumber(company.getVat());
+        user.setRcs(company.getRcsImmatriculation());
+        user.setLegalForm(company.getCompanyType());
         user.setSellsyId(company.getSellsyId());
         user.setSellsyType(company.getType()); // Utiliser le type réel de Sellsy (prospect ou client)
         

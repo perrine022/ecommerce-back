@@ -128,11 +128,30 @@ public class User implements UserDetails {
     @Column(name = "company_name")
     private String companyName;
 
-    @Column(name = "siren")
-    private String siren;
+    @Column(name = "siret")
+    private String siret;
+
+    @Column(name = "vat_number")
+    private String vatNumber;
+
+    @Column(name = "rcs")
+    private String rcs;
+
+    @Column(name = "legal_form")
+    private String legalForm;
 
     @Column(name = "active")
     private Boolean active = false;
+
+    @Column(name = "premium_enabled")
+    private Boolean premiumEnabled = false;
+
+    @Column(name = "subscription_status")
+    @Enumerated(EnumType.STRING)
+    private com.tradeall.tradefood.model.SubscriptionStatus subscriptionStatus;
+
+    @Column(name = "subscription_date")
+    private java.time.LocalDateTime subscriptionDate;
 
     public User() {}
 
@@ -250,12 +269,36 @@ public class User implements UserDetails {
         this.companyName = companyName;
     }
 
-    public String getSiren() {
-        return siren;
+    public String getSiret() {
+        return siret;
     }
 
-    public void setSiren(String siren) {
-        this.siren = siren;
+    public void setSiret(String siret) {
+        this.siret = siret;
+    }
+
+    public String getVatNumber() {
+        return vatNumber;
+    }
+
+    public void setVatNumber(String vatNumber) {
+        this.vatNumber = vatNumber;
+    }
+
+    public String getRcs() {
+        return rcs;
+    }
+
+    public void setRcs(String rcs) {
+        this.rcs = rcs;
+    }
+
+    public String getLegalForm() {
+        return legalForm;
+    }
+
+    public void setLegalForm(String legalForm) {
+        this.legalForm = legalForm;
     }
 
     public Boolean getActive() {
@@ -264,6 +307,30 @@ public class User implements UserDetails {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public Boolean getPremiumEnabled() {
+        return premiumEnabled;
+    }
+
+    public void setPremiumEnabled(Boolean premiumEnabled) {
+        this.premiumEnabled = premiumEnabled;
+    }
+
+    public com.tradeall.tradefood.model.SubscriptionStatus getSubscriptionStatus() {
+        return subscriptionStatus;
+    }
+
+    public void setSubscriptionStatus(com.tradeall.tradefood.model.SubscriptionStatus subscriptionStatus) {
+        this.subscriptionStatus = subscriptionStatus;
+    }
+
+    public java.time.LocalDateTime getSubscriptionDate() {
+        return subscriptionDate;
+    }
+
+    public void setSubscriptionDate(java.time.LocalDateTime subscriptionDate) {
+        this.subscriptionDate = subscriptionDate;
     }
 
     public UUID getId() {
@@ -296,7 +363,10 @@ public class User implements UserDetails {
         private Role role;
         private String sellsyType;
         private String companyName;
-        private String siren;
+        private String siret;
+        private String vatNumber;
+        private String rcs;
+        private String legalForm;
 
         public UserBuilder id(UUID id) { this.id = id; return this; }
         public UserBuilder sellsyId(Long sellsyId) { this.sellsyId = sellsyId; return this; }
@@ -307,7 +377,10 @@ public class User implements UserDetails {
         public UserBuilder role(Role role) { this.role = role; return this; }
         public UserBuilder sellsyType(String sellsyType) { this.sellsyType = sellsyType; return this; }
         public UserBuilder companyName(String companyName) { this.companyName = companyName; return this; }
-        public UserBuilder siren(String siren) { this.siren = siren; return this; }
+        public UserBuilder siret(String siret) { this.siret = siret; return this; }
+        public UserBuilder vatNumber(String vatNumber) { this.vatNumber = vatNumber; return this; }
+        public UserBuilder rcs(String rcs) { this.rcs = rcs; return this; }
+        public UserBuilder legalForm(String legalForm) { this.legalForm = legalForm; return this; }
 
         public User build() {
             User user = new User();
@@ -320,7 +393,10 @@ public class User implements UserDetails {
             user.setRole(role);
             user.setSellsyType(sellsyType);
             user.setCompanyName(companyName);
-            user.setSiren(siren);
+            user.setSiret(siret);
+            user.setVatNumber(vatNumber);
+            user.setRcs(rcs);
+            user.setLegalForm(legalForm);
             return user;
         }
     }

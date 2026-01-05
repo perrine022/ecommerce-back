@@ -123,7 +123,10 @@ public class AuthenticationService {
                 .role(User.Role.ROLE_USER)
                 .sellsyType("prospect")
                 .companyName(request.getCompanyName())
-                .siren(request.getSiren())
+                .siret(request.getSiret())
+                .vatNumber(request.getVatNumber())
+                .rcs(request.getRcs())
+                .legalForm(request.getLegalForm())
                 .build();
         
         user.setPhoneNumber(request.getPhone());
@@ -196,13 +199,16 @@ public class AuthenticationService {
         sellsyCompany.setSocial(social);
 
         com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest.SellsyLegalFranceRequest legal = new com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest.SellsyLegalFranceRequest();
-        String siren = request.getSiren() != null ? request.getSiren() : "";
-        legal.setSiren(siren);
-        legal.setSiret(!siren.isBlank() ? siren + "00000" : "");
-        legal.setVat("FR99999999999");
-        legal.setApe_naf_code("0000C");
-        legal.setCompany_type("SAS");
-        legal.setRcs_immatriculation("RCS xxxxx");
+        String siret = request.getSiret() != null ? request.getSiret() : "";
+        legal.setSiret(siret);
+        // Extraction du SIREN depuis le SIRET (9 premiers chiffres) si possible
+        if (siret.length() >= 9) {
+            legal.setSiren(siret.substring(0, 9));
+        }
+        legal.setVat(request.getVatNumber() != null ? request.getVatNumber() : "");
+        legal.setRcs_immatriculation(request.getRcs() != null ? request.getRcs() : "");
+        legal.setCompany_type(request.getLegalForm() != null ? request.getLegalForm() : "");
+        legal.setApe_naf_code(""); // Non fourni par le front pour le moment
         sellsyCompany.setLegal_france(legal);
 
         // Autres champs
@@ -227,6 +233,15 @@ public class AuthenticationService {
                 companyEntity.setType(createdCompany.getType());
                 companyEntity.setCreated(createdCompany.getCreated());
                 companyEntity.setUpdated(createdCompany.getUpdated_at());
+                
+                if (createdCompany.getLegal_france() != null) {
+                    companyEntity.setSiret(createdCompany.getLegal_france().getSiret());
+                    companyEntity.setSiren(createdCompany.getLegal_france().getSiren());
+                    companyEntity.setVat(createdCompany.getLegal_france().getVat());
+                    companyEntity.setRcsImmatriculation(createdCompany.getLegal_france().getRcs_immatriculation());
+                    companyEntity.setCompanyType(createdCompany.getLegal_france().getCompany_type());
+                }
+                
                 companySellsyRepository.save(companyEntity);
             }
         } catch (Exception e) {

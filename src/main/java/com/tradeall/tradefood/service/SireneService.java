@@ -86,7 +86,7 @@ public class SireneService {
 
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        String url = String.format("%s/%s?masquerValeursNulles=false", apiUrlSiren, siren);
+        String url = String.format("%s/%s?masquerValeursNulles=false", apiUrlSiret, siren);
         log.debug("URL d'appel SIREN : {}", url);
 
         try {

@@ -11,18 +11,24 @@ public class RegisterRequest {
     private String email;
     private String password;
     private String companyName;
-    private String siren;
+    private String siret;
+    private String vatNumber;
+    private String rcs;
+    private String legalForm;
     private String phone;
 
     public RegisterRequest() {}
 
-    public RegisterRequest(String firstName, String lastName, String email, String password, String companyName, String siren, String phone) {
+    public RegisterRequest(String firstName, String lastName, String email, String password, String companyName, String siret, String vatNumber, String rcs, String legalForm, String phone) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
         this.companyName = companyName;
-        this.siren = siren;
+        this.siret = siret;
+        this.vatNumber = vatNumber;
+        this.rcs = rcs;
+        this.legalForm = legalForm;
         this.phone = phone;
     }
 
@@ -36,8 +42,14 @@ public class RegisterRequest {
     public void setPassword(String password) { this.password = password; }
     public String getCompanyName() { return companyName; }
     public void setCompanyName(String companyName) { this.companyName = companyName; }
-    public String getSiren() { return siren; }
-    public void setSiren(String siren) { this.siren = siren; }
+    public String getSiret() { return siret; }
+    public void setSiret(String siret) { this.siret = siret; }
+    public String getVatNumber() { return vatNumber; }
+    public void setVatNumber(String vatNumber) { this.vatNumber = vatNumber; }
+    public String getRcs() { return rcs; }
+    public void setRcs(String rcs) { this.rcs = rcs; }
+    public String getLegalForm() { return legalForm; }
+    public void setLegalForm(String legalForm) { this.legalForm = legalForm; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
 }
