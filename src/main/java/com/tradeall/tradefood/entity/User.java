@@ -76,6 +76,9 @@ public class User implements UserDetails {
 
     @Column(name = "delivery_address_id")
     private Long deliveryAddressId;
+
+    @Column(name = "default_address_id")
+    private Long defaultAddressId;
     
     // Social
     @Column(name = "twitter")
@@ -127,6 +130,7 @@ public class User implements UserDetails {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "commercial_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User commercial;
 
     @Column(name = "sellsy_type")
@@ -228,6 +232,8 @@ public class User implements UserDetails {
     public void setInvoicingAddressId(Long invoicingAddressId) { this.invoicingAddressId = invoicingAddressId; }
     public Long getDeliveryAddressId() { return deliveryAddressId; }
     public void setDeliveryAddressId(Long deliveryAddressId) { this.deliveryAddressId = deliveryAddressId; }
+    public Long getDefaultAddressId() { return defaultAddressId; }
+    public void setDefaultAddressId(Long defaultAddressId) { this.defaultAddressId = defaultAddressId; }
     public String getTwitter() { return twitter; }
     public void setTwitter(String twitter) { this.twitter = twitter; }
     public String getFacebook() { return facebook; }

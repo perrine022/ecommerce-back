@@ -18,6 +18,7 @@ public class SellsyAddressDTO {
     private String country_code;
     private Boolean is_invoicing_address;
     private Boolean is_delivery_address;
+    private Boolean is_default_address;
     private Geocode geocode;
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -55,6 +56,8 @@ public class SellsyAddressDTO {
     public void setIs_invoicing_address(Boolean is_invoicing_address) { this.is_invoicing_address = is_invoicing_address; }
     public Boolean getIs_delivery_address() { return is_delivery_address; }
     public void setIs_delivery_address(Boolean is_delivery_address) { this.is_delivery_address = is_delivery_address; }
+    public Boolean getIs_default_address() { return is_default_address; }
+    public void setIs_default_address(Boolean is_default_address) { this.is_default_address = is_default_address; }
     public Geocode getGeocode() { return geocode; }
     public void setGeocode(Geocode geocode) { this.geocode = geocode; }
 }

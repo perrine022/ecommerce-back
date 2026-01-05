@@ -626,6 +626,9 @@ public class UserService {
                     if (Boolean.TRUE.equals(addressDTO.getIs_delivery_address())) {
                         user.setDeliveryAddressId(newAddress.getId());
                     }
+                    // Mettre à jour l'adresse par défaut systématiquement lors d'une création
+                    user.setDefaultAddressId(newAddress.getId());
+                    
                     userRepository.save(user);
                     log.info("Adresse Sellsy {} créée et liée à l'utilisateur {}", newAddress.getId(), user.getEmail());
                     return newAddress;
@@ -640,7 +643,17 @@ public class UserService {
         if (user.getSellsyId() == null) {
             return reactor.core.publisher.Mono.error(new RuntimeException("L'utilisateur n'a pas d'identifiant Sellsy."));
         }
-        return sellsyClient.getAddresses(user.getSellsyType(), user.getSellsyId(), limit, offset);
+        return sellsyClient.getAddresses(user.getSellsyType(), user.getSellsyId(), limit, offset)
+                .map(response -> {
+                    if (response.getData() != null) {
+                        response.getData().forEach(addr -> {
+                            addr.setIs_invoicing_address(addr.getId().equals(user.getInvoicingAddressId()));
+                            addr.setIs_delivery_address(addr.getId().equals(user.getDeliveryAddressId()));
+                            addr.setIs_default_address(addr.getId().equals(user.getDefaultAddressId()));
+                        });
+                    }
+                    return response;
+                });
     }
 
     /**

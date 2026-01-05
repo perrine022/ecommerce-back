@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     note TEXT,
     invoicing_address_id BIGINT,
     delivery_address_id BIGINT,
+    default_address_id BIGINT,
     twitter VARCHAR(255),
     facebook VARCHAR(255),
     linkedin VARCHAR(255),

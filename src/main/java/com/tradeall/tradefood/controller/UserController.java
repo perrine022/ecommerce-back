@@ -31,7 +31,8 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<User> getCurrentUser(@AuthenticationPrincipal User user) {
         log.info("Requête pour récupérer l'utilisateur actuel: {}", user.getEmail());
-        return ResponseEntity.ok(user);
+        // Recharger l'utilisateur depuis la DB pour éviter les problèmes de Proxy Hibernate hors session
+        return ResponseEntity.ok(userService.getUserById(user.getId()));
     }
 
     /**
@@ -135,7 +136,15 @@ public class UserController {
             @RequestParam(defaultValue = "0") int offset) {
         log.info("Récupération des adresses pour l'utilisateur: {}", user.getEmail());
         return userService.getUserAddresses(user.getId(), limit, offset)
-                .map(ResponseEntity::ok);
+                .map(response -> {
+                    try {
+                        String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(response.getData());
+                        log.info("Adresses récupérées pour {}: {}", user.getEmail(), json);
+                    } catch (Exception e) {
+                        log.warn("Impossible de loguer les adresses: {}", e.getMessage());
+                    }
+                    return ResponseEntity.ok(response);
+                });
     }
 
     /**
