@@ -48,6 +48,10 @@ public class CompanySellsy {
     private Long invoicingAddressId;
     private Long deliveryAddressId;
 
+    // Owner
+    private Long ownerId;
+    private String ownerType;
+
     public CompanySellsy() {}
 
     public UUID getId() { return id; }
@@ -104,4 +108,8 @@ public class CompanySellsy {
     public void setInvoicingAddressId(Long invoicingAddressId) { this.invoicingAddressId = invoicingAddressId; }
     public Long getDeliveryAddressId() { return deliveryAddressId; }
     public void setDeliveryAddressId(Long deliveryAddressId) { this.deliveryAddressId = deliveryAddressId; }
+    public Long getOwnerId() { return ownerId; }
+    public void setOwnerId(Long ownerId) { this.ownerId = ownerId; }
+    public String getOwnerType() { return ownerType; }
+    public void setOwnerType(String ownerType) { this.ownerType = ownerType; }
 }

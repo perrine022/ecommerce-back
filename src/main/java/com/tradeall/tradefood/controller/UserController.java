@@ -64,6 +64,12 @@ public class UserController {
         return ResponseEntity.ok(userService.getClientsByCommercial(commercial.getId()));
     }
 
+    @GetMapping("/owner/{ownerId}")
+    public ResponseEntity<List<User>> getUsersByOwner(@PathVariable Long ownerId) {
+        log.info("Requête pour récupérer les utilisateurs rattachés au owner ID: {}", ownerId);
+        return ResponseEntity.ok(userService.getUsersByOwnerId(ownerId));
+    }
+
     /**
      * Récupère la liste de tous les utilisateurs (Admin seulement).
      * @return Liste des utilisateurs.

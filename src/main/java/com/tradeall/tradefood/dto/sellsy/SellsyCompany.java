@@ -19,9 +19,21 @@ public class SellsyCompany {
     private Boolean is_archived;
     private SellsyLegalFrance legal_france;
     private SellsySocial social;
+    private SellsyOwner owner;
     private Object business_segment;
     private Object number_of_employees;
     private SellsyEmbed _embed;
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SellsyOwner {
+        private Long id;
+        private String type;
+
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SellsyEmbed {
@@ -131,6 +143,8 @@ public class SellsyCompany {
     public void setBusiness_segment(Object business_segment) { this.business_segment = business_segment; }
     public Object getNumber_of_employees() { return number_of_employees; }
     public void setNumber_of_employees(Object number_of_employees) { this.number_of_employees = number_of_employees; }
+    public SellsyOwner getOwner() { return owner; }
+    public void setOwner(SellsyOwner owner) { this.owner = owner; }
     public SellsyEmbed get_embed() { return _embed; }
     public void set_embed(SellsyEmbed _embed) { this._embed = _embed; }
 }

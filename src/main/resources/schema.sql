@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS users (
     created VARCHAR(50),
     updated VARCHAR(50),
     is_archived BOOLEAN,
-    role VARCHAR(50),
+    role VARCHAR(255),
     sellsy_type VARCHAR(50),
     company_name VARCHAR(255),
     siret VARCHAR(50),

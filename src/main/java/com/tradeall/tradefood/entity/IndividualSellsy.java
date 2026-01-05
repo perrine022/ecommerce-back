@@ -36,6 +36,11 @@ public class IndividualSellsy {
     
     private Long invoicingAddressId;
     private Long deliveryAddressId;
+    
+    // Owner
+    private Long ownerId;
+    private String ownerType;
+
     private String created;
     private String updated;
     private Boolean isArchived;
@@ -85,6 +90,10 @@ public class IndividualSellsy {
     public void setInvoicingAddressId(Long invoicingAddressId) { this.invoicingAddressId = invoicingAddressId; }
     public Long getDeliveryAddressId() { return deliveryAddressId; }
     public void setDeliveryAddressId(Long deliveryAddressId) { this.deliveryAddressId = deliveryAddressId; }
+    public Long getOwnerId() { return ownerId; }
+    public void setOwnerId(Long ownerId) { this.ownerId = ownerId; }
+    public String getOwnerType() { return ownerType; }
+    public void setOwnerType(String ownerType) { this.ownerType = ownerType; }
     public String getCreated() { return created; }
     public void setCreated(String created) { this.created = created; }
     public String getUpdated() { return updated; }

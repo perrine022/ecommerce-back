@@ -8,6 +8,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -34,8 +35,27 @@ public class SellsySyncBatch {
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-        log.info("Démarrage de la synchronisation Sellsy post-initialisation...");
-        syncAll();
+        log.info("DÉMARRAGE DE LA MISE À JOUR FORCÉE DES RÔLES UTILISATEURS...");
+        try {
+            List<User> users = userRepository.findAll();
+            int updatedCount = 0;
+            for (User user : users) {
+                try {
+                    user.setRole(User.Role.ROLE_CLIENT);
+                    user.setActive(true);
+                    userRepository.save(user);
+                    updatedCount++;
+                } catch (Exception e) {
+                    log.error("Impossible de mettre à jour l'utilisateur {}: {}", user.getEmail(), e.getMessage());
+                }
+            }
+            log.info("Mise à jour terminée : {}/{} utilisateurs passés en ROLE_CLIENT.", updatedCount, users.size());
+
+            log.info("Démarrage de la synchronisation Sellsy post-initialisation...");
+            syncAll();
+        } catch (Exception e) {
+            log.error("Erreur lors de la mise à jour initiale/synchronisation: {}", e.getMessage(), e);
+        }
     }
 
     /**

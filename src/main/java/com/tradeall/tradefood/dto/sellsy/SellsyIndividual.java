@@ -23,6 +23,18 @@ public class SellsyIndividual {
     private String updated_at;
     private Boolean is_archived;
     private SellsySync sync;
+    private SellsyOwner owner;
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SellsyOwner {
+        private Long id;
+        private String type;
+
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SellsySocial {
@@ -93,4 +105,6 @@ public class SellsyIndividual {
     public void setIs_archived(Boolean is_archived) { this.is_archived = is_archived; }
     public SellsySync getSync() { return sync; }
     public void setSync(SellsySync sync) { this.sync = sync; }
+    public SellsyOwner getOwner() { return owner; }
+    public void setOwner(SellsyOwner owner) { this.owner = owner; }
 }

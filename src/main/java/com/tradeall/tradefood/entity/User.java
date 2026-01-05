@@ -464,6 +464,7 @@ public class User implements UserDetails {
         ROLE_CLIENT,
         ROLE_COMMERCIAL,
         ROLE_LIVREUR,
-        ROLE_ADMIN
+        ROLE_ADMIN,
+        ROLE_USER
     }
 }

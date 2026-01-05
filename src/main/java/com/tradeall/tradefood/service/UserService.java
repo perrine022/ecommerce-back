@@ -63,6 +63,10 @@ public class UserService {
         return userRepository.findAllByCommercialId(commercialId);
     }
 
+    public List<User> getUsersByOwnerId(Long ownerId) {
+        return userRepository.findAllByOwnerId(ownerId);
+    }
+
     public List<User> getAllUsers() {
         log.debug("Récupération de tous les utilisateurs");
         return userRepository.findAll();
@@ -283,6 +287,11 @@ public class UserService {
                                 individual.setUpdated(dto.getUpdated_at());
                                 individual.setIsArchived(dto.getIs_archived());
 
+                                if (dto.getOwner() != null) {
+                                    individual.setOwnerId(dto.getOwner().getId());
+                                    individual.setOwnerType(dto.getOwner().getType());
+                                }
+
                                 if (dto.getSocial() != null) {
                                     individual.setTwitter(dto.getSocial().getTwitter());
                                     individual.setFacebook(dto.getSocial().getFacebook());
@@ -340,6 +349,11 @@ public class UserService {
                                 company.setCreated(dto.getCreated());
                                 company.setUpdated(dto.getUpdated_at());
                                 company.setIsArchived(dto.getIs_archived());
+
+                                if (dto.getOwner() != null) {
+                                    company.setOwnerId(dto.getOwner().getId());
+                                    company.setOwnerType(dto.getOwner().getType());
+                                }
 
                                 if (dto.get_embed() != null) {
                                     if (dto.get_embed().getMain_contact() != null) {
@@ -475,6 +489,8 @@ public class UserService {
         user.setSyncMailchimp(individual.getSyncMailchimp());
         user.setSyncMailjet(individual.getSyncMailjet());
         user.setSyncSimplemail(individual.getSyncSimplemail());
+        user.setOwnerId(individual.getOwnerId());
+        user.setOwnerType(individual.getOwnerType());
         user.setCreated(individual.getCreated());
         user.setUpdated(individual.getUpdated());
         user.setIsArchived(individual.getIsArchived());
@@ -519,6 +535,8 @@ public class UserService {
         user.setFacebook(company.getFacebook());
         user.setLinkedin(company.getLinkedin());
         user.setViadeo(company.getViadeo());
+        user.setOwnerId(company.getOwnerId());
+        user.setOwnerType(company.getOwnerType());
         user.setCreated(company.getCreated());
         user.setUpdated(company.getUpdated());
         user.setIsArchived(company.getIsArchived());
