@@ -20,6 +20,7 @@ public class Payment implements Serializable {
     private String paymentIntent;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status_enum", length = 50)
     private PaymentStatusEnum paymentStatusEnum;
 
     private long amount;

@@ -27,6 +27,7 @@ public class SyncBatchService {
         log.info("Lancement de la synchronisation initiale au démarrage...");
         categoryService.syncCategoriesV1();
         userService.syncUsers();
+        userService.syncStaffs();
     }
 
     /**
@@ -60,6 +61,9 @@ public class SyncBatchService {
             
             log.info("Batch: Synchronisation des utilisateurs (clients)...");
             userService.syncUsers();
+
+            log.info("Batch: Synchronisation du staff...");
+            userService.syncStaffs();
             
             log.info("Batch de synchronisation nocturne terminé avec succès.");
         } catch (Exception e) {

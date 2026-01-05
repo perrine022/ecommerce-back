@@ -26,12 +26,26 @@ public class Order {
 
     @Column(name = "order_date")
     private LocalDateTime orderDate;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        this.orderDate = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
     
     @Column(name = "total_amount")
     private Double totalAmount;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", length = 50)
     private OrderStatus status;
 
     @Column(name = "number")
@@ -168,6 +182,8 @@ public class Order {
     public void setUser(User user) { this.user = user; }
     public LocalDateTime getOrderDate() { return orderDate; }
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public Double getTotalAmount() { return totalAmount; }
     public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
     public OrderStatus getStatus() { return status; }

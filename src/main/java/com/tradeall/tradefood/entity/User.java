@@ -119,7 +119,7 @@ public class User implements UserDetails {
     private List<String> marketingCampaignsSubscriptions;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role")
+    @Column(name = "role", length = 50)
     private Role role;
 
     @ManyToOne(fetch = FetchType.LAZY)

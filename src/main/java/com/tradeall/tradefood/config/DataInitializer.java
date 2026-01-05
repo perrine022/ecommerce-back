@@ -19,7 +19,7 @@ public class DataInitializer {
         return args -> {
             // Lancement de la synchronisation automatique au démarrage
             System.out.println("Lancement de la synchronisation automatique au démarrage...");
-            syncBatchService.runNightlySync();
+            syncBatchService.initSync();
 
             String email = "perrine@gmail.com";
             if (userRepository.findByEmail(email).isEmpty()) {

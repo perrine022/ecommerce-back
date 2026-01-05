@@ -1,5 +1,6 @@
 package com.tradeall.tradefood.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.util.UUID;
 
@@ -16,6 +17,7 @@ public class CartItem {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "cart_id")
     private Cart cart;
