@@ -454,8 +454,25 @@ public class UserService {
                     newUser.setEmail(company.getEmail());
                     newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
                     newUser.setRole(User.Role.ROLE_USER);
+                    newUser.setSellsyType("prospect"); // Par défaut lors de la création
                     return newUser;
                 });
+
+        // Logique spécifique : si l'utilisateur local est un prospect, on vérifie s'il est devenu client sur Sellsy
+        if ("prospect".equalsIgnoreCase(user.getSellsyType()) && "client".equalsIgnoreCase(company.getType())) {
+            log.info("L'utilisateur {} est passé de prospect à client sur Sellsy. Mise à jour locale.", user.getEmail());
+            user.setSellsyType("client");
+            user.setActive(true);
+        } else if ("client".equalsIgnoreCase(company.getType())) {
+            // S'il est déjà client sur Sellsy, on s'assure qu'il est actif et marqué client localement
+            user.setSellsyType("client");
+            user.setActive(true);
+        } else if ("prospect".equalsIgnoreCase(company.getType())) {
+            // S'il est prospect sur Sellsy, on s'assure qu'il est marqué prospect localement
+            user.setSellsyType("prospect");
+            // Note: on ne désactive pas forcément s'il était déjà actif, 
+            // sauf si c'est la règle métier stricte (ici on suit la demande de passer à actif quand il devient client)
+        }
 
         user.setCompanyName(company.getName());
         user.setSiret(company.getSiret());
@@ -464,15 +481,7 @@ public class UserService {
         user.setLegalForm(company.getCompanyType());
         user.setApeNafCode(company.getApeNafCode());
         user.setSellsyId(company.getSellsyId());
-        user.setSellsyType(company.getType()); // Utiliser le type réel de Sellsy (prospect ou client)
         
-        // Logique d'activation : client et non prospect
-        if ("client".equalsIgnoreCase(company.getType())) {
-            user.setActive(true);
-        } else {
-            user.setActive(false);
-        }
-
         user.setWebsite(company.getWebsite());
         user.setPhoneNumber(company.getPhoneNumber());
         user.setMobileNumber(company.getMobileNumber());
