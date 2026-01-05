@@ -664,7 +664,39 @@ public class UserService {
         if (user.getSellsyId() == null) {
             return reactor.core.publisher.Mono.error(new RuntimeException("L'utilisateur n'a pas d'identifiant Sellsy."));
         }
-        return sellsyClient.updateAddress(user.getSellsyType(), user.getSellsyId(), addressId, addressDTO);
+
+        // Si c'est une adresse par défaut ou une mise à jour classique, on prépare l'objet pour Sellsy
+        // On crée un nouvel objet sans les champs invoicing/delivery pour Sellsy
+        com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO requestToSellsy = new com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO();
+        requestToSellsy.setName(addressDTO.getName());
+        requestToSellsy.setAddress_line_1(addressDTO.getAddress_line_1());
+        requestToSellsy.setAddress_line_2(addressDTO.getAddress_line_2());
+        requestToSellsy.setAddress_line_3(addressDTO.getAddress_line_3());
+        requestToSellsy.setAddress_line_4(addressDTO.getAddress_line_4());
+        requestToSellsy.setPostal_code(addressDTO.getPostal_code());
+        requestToSellsy.setCity(addressDTO.getCity());
+        requestToSellsy.setCountry(addressDTO.getCountry());
+        requestToSellsy.setCountry_code(addressDTO.getCountry_code());
+        requestToSellsy.setGeocode(addressDTO.getGeocode());
+
+        // On ne met pas is_invoicing_address et is_delivery_address pour Sellsy
+        // comme demandé pour la notion "default" et création classique.
+        
+        return sellsyClient.updateAddress(user.getSellsyType(), user.getSellsyId(), addressId, requestToSellsy)
+                .map(updatedAddr -> {
+                    // Mise à jour des préférences locales basées sur les flags reçus du front (addressDTO)
+                    if (Boolean.TRUE.equals(addressDTO.getIs_invoicing_address())) {
+                        user.setInvoicingAddressId(addressId);
+                    }
+                    if (Boolean.TRUE.equals(addressDTO.getIs_delivery_address())) {
+                        user.setDeliveryAddressId(addressId);
+                    }
+                    if (Boolean.TRUE.equals(addressDTO.getIs_default_address())) {
+                        user.setDefaultAddressId(addressId);
+                    }
+                    userRepository.save(user);
+                    return updatedAddr;
+                });
     }
 
     /**
