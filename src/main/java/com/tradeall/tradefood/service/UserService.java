@@ -96,6 +96,10 @@ public class UserService {
         User user = getUserById(id);
         user.setFirstName(userDetails.getFirstName());
         user.setLastName(userDetails.getLastName());
+        user.setPhoneNumber(userDetails.getPhoneNumber());
+        user.setMobileNumber(userDetails.getMobileNumber());
+        user.setCivility(userDetails.getCivility());
+        user.setWebsite(userDetails.getWebsite());
         // Ne pas mettre à jour l'email ou le mot de passe ici par sécurité sans logique dédiée
         return userRepository.save(user);
     }

@@ -124,4 +124,54 @@ public class UserController {
         userService.syncStaffs();
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * Récupère les adresses de l'utilisateur.
+     */
+    @GetMapping("/addresses")
+    public reactor.core.publisher.Mono<ResponseEntity<?>> getAddresses(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        log.info("Récupération des adresses pour l'utilisateur: {}", user.getEmail());
+        return userService.getUserAddresses(user.getId(), limit, offset)
+                .map(ResponseEntity::ok);
+    }
+
+    /**
+     * Crée une nouvelle adresse pour l'utilisateur.
+     */
+    @PostMapping("/addresses")
+    public reactor.core.publisher.Mono<ResponseEntity<?>> createAddress(
+            @AuthenticationPrincipal User user,
+            @RequestBody com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO addressDTO) {
+        log.info("Création d'une adresse pour l'utilisateur: {}", user.getEmail());
+        return userService.createUserAddress(user.getId(), addressDTO)
+                .map(ResponseEntity::ok);
+    }
+
+    /**
+     * Met à jour une adresse existante de l'utilisateur.
+     */
+    @PutMapping("/addresses/{addressId}")
+    public reactor.core.publisher.Mono<ResponseEntity<?>> updateAddress(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long addressId,
+            @RequestBody com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO addressDTO) {
+        log.info("Mise à jour de l'adresse ID: {} pour l'utilisateur: {}", addressId, user.getEmail());
+        return userService.updateUserAddress(user.getId(), addressId, addressDTO)
+                .map(ResponseEntity::ok);
+    }
+
+    /**
+     * Supprime une adresse de l'utilisateur.
+     */
+    @DeleteMapping("/addresses/{addressId}")
+    public reactor.core.publisher.Mono<ResponseEntity<?>> deleteAddress(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long addressId) {
+        log.info("Suppression de l'adresse ID: {} pour l'utilisateur: {}", addressId, user.getEmail());
+        return userService.deleteUserAddress(user.getId(), addressId)
+                .then(reactor.core.publisher.Mono.just(ResponseEntity.ok().build()));
+    }
 }
