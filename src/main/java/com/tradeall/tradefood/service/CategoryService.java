@@ -53,7 +53,6 @@ public class CategoryService {
     /**
      * Déclenche la synchronisation des catégories depuis Sellsy API v1.
      */
-    @Transactional
     public void syncCategoriesV1() {
         log.info("Début de la synchronisation des catégories depuis Sellsy v1...");
         sellsyClient.getCategoriesV1("Y").subscribe(
@@ -107,7 +106,6 @@ public class CategoryService {
     /**
      * Déclenche la synchronisation des catégories depuis Sellsy.
      */
-    @Transactional
     public void syncCategories() {
         log.info("Début de la synchronisation des catégories depuis Sellsy...");
         int limit = 100;

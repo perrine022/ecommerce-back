@@ -1,7 +1,10 @@
 package com.tradeall.tradefood.service;
 
 import com.tradeall.tradefood.client.SellsyClient;
+import com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO;
+import com.tradeall.tradefood.dto.sellsy.SellsyAddressRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyResponse;
+import com.tradeall.tradefood.dto.sellsy.SellsyStaff;
 import com.tradeall.tradefood.entity.ContactSellsy;
 import com.tradeall.tradefood.entity.CompanySellsy;
 import com.tradeall.tradefood.entity.IndividualSellsy;
@@ -56,6 +59,10 @@ public class UserService {
      * Récupère la liste de tous les utilisateurs inscrits.
      * @return Liste des utilisateurs.
      */
+    public List<User> getClientsByCommercial(UUID commercialId) {
+        return userRepository.findAllByCommercialId(commercialId);
+    }
+
     public List<User> getAllUsers() {
         log.debug("Récupération de tous les utilisateurs");
         return userRepository.findAll();
@@ -114,9 +121,9 @@ public class UserService {
     /**
      * Synchronise les contacts Sellsy vers la table des utilisateurs locaux.
      */
-    @Transactional
     public void syncUsers() {
-        log.info("Début de la synchronisation globale depuis Sellsy (Contacts, Individuals, Companies)");
+        log.info("Démarrage de la synchronisation forcée des utilisateurs depuis Sellsy (rôles CLIENT forcés)...");
+        syncStaffs(0, 100);
         syncContacts(0, 100);
         syncIndividuals(0, 100);
         syncCompanies(0, 100);
@@ -132,6 +139,49 @@ public class UserService {
 
     public void syncCompanies() {
         syncCompanies(0, 100);
+    }
+
+    public void syncStaffs() {
+        syncStaffs(0, 100);
+    }
+
+    private void syncStaffs(int offset, int limit) {
+        sellsyClient.getStaffs(limit, offset)
+                .map(response -> {
+                    log.debug("Reçu {} staffs de Sellsy (offset: {})", response.getData().size(), offset);
+                    response.getData().forEach(dto -> {
+                        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+                            User user = userRepository.findByEmail(dto.getEmail())
+                                    .orElse(new User());
+
+                            boolean isNew = user.getId() == null;
+
+                            user.setFirstName(dto.getFirstname());
+                            user.setLastName(dto.getLastname());
+                            user.setEmail(dto.getEmail());
+                            user.setSellsyId(dto.getId());
+                            user.setRole(User.Role.ROLE_COMMERCIAL);
+                            user.setActive(true);
+
+                            if (isNew) {
+                                user.setPassword(passwordEncoder.encode("Sellsy2026!"));
+                            }
+
+                            userRepository.save(user);
+                            log.debug("{} utilisateur staff: {}", isNew ? "Créé" : "Mis à jour", dto.getEmail());
+                        }
+                    });
+                    return response;
+                })
+                .subscribe(
+                        response -> {
+                            log.info("Synchronisation réussie: {} staffs traités", response.getData().size());
+                            if (response.getPagination() != null && response.getPagination().getTotal() > offset + limit) {
+                                syncStaffs(offset + limit, limit);
+                            }
+                        },
+                        error -> log.error("Erreur lors de la synchronisation des staffs Sellsy: {}", error.getMessage())
+                );
     }
 
     private void syncContacts(int offset, int limit) {
@@ -350,20 +400,16 @@ public class UserService {
                     User newUser = new User();
                     newUser.setEmail(contact.getEmail());
                     newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Mot de passe temporaire aléatoire
-                    newUser.setRole(User.Role.ROLE_USER);
                     return newUser;
                 });
 
+        user.setRole(User.Role.ROLE_CLIENT);
+        user.setActive(true); // Forcé à true comme demandé
         user.setFirstName(contact.getFirstName());
         user.setLastName(contact.getLastName());
         user.setSellsyId(contact.getSellsyId());
         user.setSellsyType("contact");
         
-        // Pour les contacts simples, on active par défaut s'ils sont synchronisés
-        // ou on pourrait imaginer une logique liée à la compagnie parente.
-        // Ici, on garde actif par défaut pour les contacts existants ou on peut rester prudent.
-        user.setActive(true); 
-
         user.setCivility(contact.getCivility());
         user.setWebsite(contact.getWebsite());
         user.setPhoneNumber(contact.getPhoneNumber());
@@ -403,21 +449,15 @@ public class UserService {
                     User newUser = new User();
                     newUser.setEmail(individual.getEmail());
                     newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-                    newUser.setRole(User.Role.ROLE_USER);
                     return newUser;
                 });
 
+        user.setRole(User.Role.ROLE_CLIENT);
+        user.setActive(true); // Forcé à true pour tous les types Sellsy (client/prospect) comme demandé
         user.setFirstName(individual.getFirstName());
         user.setLastName(individual.getLastName());
         user.setSellsyId(individual.getSellsyId());
         user.setSellsyType(individual.getType()); // Utiliser le type réel de Sellsy
-
-        // Logique d'activation : client et non prospect
-        if ("client".equalsIgnoreCase(individual.getType())) {
-            user.setActive(true);
-        } else {
-            user.setActive(false);
-        }
 
         user.setCivility(individual.getCivility());
         user.setWebsite(individual.getWebsite());
@@ -453,26 +493,12 @@ public class UserService {
                     User newUser = new User();
                     newUser.setEmail(company.getEmail());
                     newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
-                    newUser.setRole(User.Role.ROLE_USER);
-                    newUser.setSellsyType("prospect"); // Par défaut lors de la création
                     return newUser;
                 });
 
-        // Logique spécifique : si l'utilisateur local est un prospect, on vérifie s'il est devenu client sur Sellsy
-        if ("prospect".equalsIgnoreCase(user.getSellsyType()) && "client".equalsIgnoreCase(company.getType())) {
-            log.info("L'utilisateur {} est passé de prospect à client sur Sellsy. Mise à jour locale.", user.getEmail());
-            user.setSellsyType("client");
-            user.setActive(true);
-        } else if ("client".equalsIgnoreCase(company.getType())) {
-            // S'il est déjà client sur Sellsy, on s'assure qu'il est actif et marqué client localement
-            user.setSellsyType("client");
-            user.setActive(true);
-        } else if ("prospect".equalsIgnoreCase(company.getType())) {
-            // S'il est prospect sur Sellsy, on s'assure qu'il est marqué prospect localement
-            user.setSellsyType("prospect");
-            // Note: on ne désactive pas forcément s'il était déjà actif, 
-            // sauf si c'est la règle métier stricte (ici on suit la demande de passer à actif quand il devient client)
-        }
+        user.setRole(User.Role.ROLE_CLIENT);
+        user.setActive(true); // Forcé à true pour tous les types Sellsy (client/prospect) comme demandé
+        user.setSellsyType(company.getType()); // Utiliser le type réel de Sellsy
 
         user.setCompanyName(company.getName());
         user.setSiret(company.getSiret());
@@ -511,6 +537,11 @@ public class UserService {
             return reactor.core.publisher.Mono.error(new RuntimeException("L'utilisateur n'a pas d'identifiant Sellsy."));
         }
 
+        // Forcer à false pour le moment comme demandé
+        addressDTO.setIs_invoicing_address(false);
+        addressDTO.setIs_delivery_address(false);
+        addressDTO.setId(null); // Ne pas envoyer l'ID lors de la création
+
         // Validation de base pour Sellsy v2
         if (addressDTO.getAddress_line_1() == null || addressDTO.getAddress_line_1().isBlank()) {
             return reactor.core.publisher.Mono.error(new RuntimeException("La ligne d'adresse 1 est obligatoire pour Sellsy."));
@@ -526,7 +557,25 @@ public class UserService {
             addressDTO.setCountry_code("FR"); 
         }
 
-        return sellsyClient.createAddress(user.getSellsyType(), user.getSellsyId(), addressDTO)
+        SellsyAddressRequest request = new SellsyAddressRequest();
+        request.setName(addressDTO.getName());
+        request.setAddress_line_1(addressDTO.getAddress_line_1());
+        request.setAddress_line_2(addressDTO.getAddress_line_2());
+        request.setAddress_line_3(addressDTO.getAddress_line_3());
+        request.setAddress_line_4(addressDTO.getAddress_line_4());
+        request.setPostal_code(addressDTO.getPostal_code());
+        request.setCity(addressDTO.getCity());
+        request.setCountry(addressDTO.getCountry());
+        request.setCountry_code(addressDTO.getCountry_code());
+        
+        if (addressDTO.getGeocode() != null) {
+            SellsyAddressRequest.Geocode geo = new SellsyAddressRequest.Geocode();
+            geo.setLat(addressDTO.getGeocode().getLat());
+            geo.setLng(addressDTO.getGeocode().getLng());
+            request.setGeocode(geo);
+        }
+
+        return sellsyClient.createAddress(user.getSellsyType(), user.getSellsyId(), request)
                 .map(newAddress -> {
                     if (Boolean.TRUE.equals(addressDTO.getIs_invoicing_address())) {
                         user.setInvoicingAddressId(newAddress.getId());

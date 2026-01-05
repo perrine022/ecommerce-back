@@ -105,11 +105,10 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<Order> createOrder(@AuthenticationPrincipal User user, @RequestBody com.tradeall.tradefood.dto.OrderCreateRequest request) {
         log.info("Création manuelle d'une commande pour l'utilisateur: {}", user.getEmail());
-        Cart cart = cartService.getCartByUser(user);
-        if (cart.getItems().isEmpty()) {
+        if (request.getItems() == null || request.getItems().isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(orderService.createManualOrder(cart, request));
+        return ResponseEntity.ok(orderService.createManualOrder(user, request));
     }
 
     /**
@@ -133,5 +132,24 @@ public class OrderController {
     public ResponseEntity<Order> updateAddresses(@PathVariable java.util.UUID id, @RequestBody com.tradeall.tradefood.dto.AddressRequestDTO addresses) {
         log.info("Mise à jour des adresses pour la commande ID: {}", id);
         return ResponseEntity.ok(orderService.updateOrderAddresses(id, addresses));
+    }
+
+    /**
+     * Valide une commande avec un code à 4 chiffres.
+     * @param id L'identifiant de la commande.
+     * @param payload Map contenant le code "code".
+     * @return La commande validée.
+     */
+    @PostMapping("/{id}/validate")
+    public ResponseEntity<Order> validateOrder(@PathVariable java.util.UUID id, @RequestBody Map<String, String> payload) {
+        String code = payload.get("code");
+        log.info("Validation de la commande ID: {} avec le code: {}", id, code);
+        try {
+            Order validatedOrder = orderService.validateOrderWithCode(id, code);
+            return ResponseEntity.ok(validatedOrder);
+        } catch (RuntimeException e) {
+            log.warn("Échec de la validation pour la commande ID: {}. Raison: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

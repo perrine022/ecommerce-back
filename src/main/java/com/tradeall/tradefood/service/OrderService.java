@@ -6,7 +6,10 @@ import com.tradeall.tradefood.dto.sellsy.SellsyOrderRequest;
 import com.tradeall.tradefood.entity.Order;
 import com.tradeall.tradefood.entity.OrderItem;
 import com.tradeall.tradefood.entity.User;
+import com.tradeall.tradefood.entity.Product;
 import com.tradeall.tradefood.repository.OrderRepository;
+import com.tradeall.tradefood.repository.ProductRepository;
+import com.tradeall.tradefood.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,10 +31,14 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final SellsyClient sellsyClient;
+    private final ProductRepository productRepository;
+    private final UserRepository userRepository;
 
-    public OrderService(OrderRepository orderRepository, SellsyClient sellsyClient) {
+    public OrderService(OrderRepository orderRepository, SellsyClient sellsyClient, ProductRepository productRepository, UserRepository userRepository) {
         this.orderRepository = orderRepository;
         this.sellsyClient = sellsyClient;
+        this.productRepository = productRepository;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -72,6 +79,27 @@ public class OrderService {
         });
     }
 
+    private String generateValidationCode() {
+        Random random = new Random();
+        int code = 1000 + random.nextInt(9000);
+        return String.valueOf(code);
+    }
+
+    /**
+     * Valide une commande avec un code à 4 chiffres.
+     */
+    @Transactional
+    public Order validateOrderWithCode(UUID orderId, String code) {
+        Order order = getOrderById(orderId);
+        if (order.getValidationCode() != null && order.getValidationCode().equals(code)) {
+            order.setValidated(true);
+            order.setStatus(Order.OrderStatus.PAID); // Ou un autre statut si nécessaire, ex: DELIVERED si il existe
+            return orderRepository.save(order);
+        } else {
+            throw new RuntimeException("Code de validation incorrect");
+        }
+    }
+
     /**
      * Crée une commande à partir d'un panier utilisateur.
      * @param cart Le panier source.
@@ -85,6 +113,7 @@ public class OrderService {
                 .orderDate(LocalDateTime.now())
                 .status(Order.OrderStatus.PENDING)
                 .totalAmount(calculateTotal(cart))
+                .validationCode(generateValidationCode())
                 .items(new ArrayList<>())
                 .build();
 
@@ -173,6 +202,18 @@ public class OrderService {
         sellsyOrder.setSubject("Commande Tradefood #" + order.getId());
         sellsyOrder.setDate(java.time.LocalDate.now().toString());
         
+        // Ajout des settings Stripe
+        SellsyOrderRequest.SellsySettings settings = new SellsyOrderRequest.SellsySettings();
+        SellsyOrderRequest.SellsyPayments payments = new SellsyOrderRequest.SellsyPayments();
+        payments.setPayment_modules(Collections.singletonList("stripe"));
+        payments.setDirect_debit_module("stripe");
+        settings.setPayments(payments);
+        
+        SellsyOrderRequest.SellsyPdfDisplay pdfDisplay = new SellsyOrderRequest.SellsyPdfDisplay();
+        settings.setPdf_display(pdfDisplay);
+        
+        sellsyOrder.setSettings(settings);
+        
         // Ajout des adresses de facturation et de livraison
         if (order.getInvoicingAddressId() != null) {
             sellsyOrder.setInvoicing_address_id(order.getInvoicingAddressId());
@@ -214,16 +255,61 @@ public class OrderService {
     }
 
     /**
-     * Crée manuellement une commande à partir d'un panier (sans Stripe).
+     * Crée manuellement une commande à partir d'une liste de produits et quantités.
      */
     @Transactional
-    public Order createManualOrder(com.tradeall.tradefood.entity.Cart cart, com.tradeall.tradefood.dto.OrderCreateRequest request) {
-        Order order = createOrderFromCart(cart);
+    public Order createManualOrder(User authenticatedUser, com.tradeall.tradefood.dto.OrderCreateRequest request) {
+        User orderUser = authenticatedUser;
+
+        // Si c'est un commercial qui passe commande pour un client
+        if (authenticatedUser.getRole() == User.Role.ROLE_COMMERCIAL && request.getClientId() != null) {
+            User client = userRepository.findById(request.getClientId())
+                    .orElseThrow(() -> new RuntimeException("Client non trouvé : " + request.getClientId()));
+            
+            // Vérifier que le client est bien rattaché au commercial (optionnel mais recommandé pour la sécurité)
+            if (client.getCommercial() == null || !client.getCommercial().getId().equals(authenticatedUser.getId())) {
+                throw new RuntimeException("Le client n'est pas rattaché à ce commercial");
+            }
+            orderUser = client;
+        }
+
+        Order order = new Order();
+        order.setUser(orderUser);
+        order.setOrderDate(LocalDateTime.now());
+        order.setStatus(Order.OrderStatus.PAID);
         order.setInvoicingAddressId(request.getInvoicingAddressId());
         order.setDeliveryAddressId(request.getDeliveryAddressId());
-        order.setStatus(Order.OrderStatus.PAID); // On la considère payée pour le moment
-        Order savedOrder = orderRepository.save(order);
+        order.setValidationCode(generateValidationCode());
         
+        List<OrderItem> items = new ArrayList<>();
+        double total = 0;
+        
+        for (com.tradeall.tradefood.dto.OrderCreateRequest.ProductItemRequest itemReq : request.getItems()) {
+            Product product = productRepository.findById(itemReq.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Produit non trouvé : " + itemReq.getProductId()));
+            
+            OrderItem item = new OrderItem();
+            item.setOrder(order);
+            item.setProduct(product);
+            item.setQuantity(itemReq.getQuantity());
+            
+            // On récupère le prix du produit (gestion du format String vers Double)
+            double price = 0;
+            try {
+                price = Double.parseDouble(product.getPriceExclTax());
+            } catch (Exception e) {
+                log.warn("Prix invalide pour le produit {}: {}", product.getName(), product.getPriceExclTax());
+            }
+            item.setUnitPrice(price);
+            
+            items.add(item);
+            total += price * itemReq.getQuantity();
+        }
+        
+        order.setItems(items);
+        order.setTotalAmount(total);
+        
+        Order savedOrder = orderRepository.save(order);
         createSellsyOrder(savedOrder);
         return savedOrder;
     }
@@ -250,7 +336,6 @@ public class OrderService {
      * Synchronise les commandes depuis Sellsy pour l'utilisateur.
      * @param user L'utilisateur concerné.
      */
-    @Transactional
     public void syncOrdersFromSellsy(User user) {
         log.info("Début de la synchronisation des commandes Sellsy pour l'utilisateur: {}", user.getEmail());
         if (user.getSellsyId() == null) {

@@ -3,6 +3,7 @@ package com.tradeall.tradefood.client;
 import com.tradeall.tradefood.dto.sellsy.SellsyCategory;
 import com.tradeall.tradefood.dto.sellsy.SellsyContact;
 import com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO;
+import com.tradeall.tradefood.dto.sellsy.SellsyAddressRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyCompany;
 import com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyIndividual;
@@ -10,6 +11,7 @@ import com.tradeall.tradefood.dto.sellsy.SellsyOrder;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrderRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyProduct;
 import com.tradeall.tradefood.dto.sellsy.SellsyResponse;
+import com.tradeall.tradefood.dto.sellsy.SellsyStaff;
 import com.tradeall.tradefood.service.SellsyAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -294,7 +296,7 @@ public class SellsyClient {
     /**
      * Crée une adresse pour une entité (compagnie ou individu).
      */
-    public Mono<SellsyAddressDTO> createAddress(String type, Long id, SellsyAddressDTO address) {
+    public Mono<SellsyAddressDTO> createAddress(String type, Long id, SellsyAddressRequest address) {
         String pathPrefix = "client".equals(type) || "company".equals(type) ? "/companies/" : "/individuals/";
         log.debug("Appel Sellsy POST {}{}/addresses", pathPrefix, id);
         return sellsyWebClient.post()
@@ -388,5 +390,30 @@ public class SellsyClient {
                     })
                 )
                 .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyOrder>>() {});
+    }
+
+    /**
+     * Récupère la liste des membres du staff depuis Sellsy.
+     * @param limit Nombre maximum.
+     * @param offset Décalage.
+     * @return Un Mono contenant la réponse paginée.
+     */
+    public Mono<SellsyResponse<SellsyStaff>> getStaffs(int limit, int offset) {
+        log.debug("Appel Sellsy GET /staffs (limit: {}, offset: {})", limit, offset);
+        return sellsyWebClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/staffs")
+                        .queryParam("limit", limit)
+                        .queryParam("offset", offset)
+                        .build())
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response ->
+                        response.bodyToMono(String.class).flatMap(body -> {
+                            log.error("Erreur 4xx Sellsy getStaffs: {}", body);
+                            return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                        })
+                )
+                .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyStaff>>() {});
     }
 }

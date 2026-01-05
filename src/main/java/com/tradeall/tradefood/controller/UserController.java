@@ -57,6 +57,13 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(user.getId(), userDetails));
     }
 
+    @GetMapping("/commercial/clients")
+    @PreAuthorize("hasRole('COMMERCIAL')")
+    public ResponseEntity<List<User>> getMyClients(@AuthenticationPrincipal User commercial) {
+        log.info("Requête du commercial {} pour récupérer ses clients rattachés", commercial.getEmail());
+        return ResponseEntity.ok(userService.getClientsByCommercial(commercial.getId()));
+    }
+
     /**
      * Récupère la liste de tous les utilisateurs (Admin seulement).
      * @return Liste des utilisateurs.
@@ -98,6 +105,17 @@ public class UserController {
     public ResponseEntity<Void> syncCompanies() {
         log.info("Requête manuelle de synchronisation des entreprises Sellsy");
         userService.syncCompanies();
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Déclenche spécifiquement la synchronisation du staff depuis Sellsy.
+     * @return Réponse vide.
+     */
+    @PostMapping("/sync/staffs")
+    public ResponseEntity<Void> syncStaffs() {
+        log.info("Requête manuelle de synchronisation du staff Sellsy");
+        userService.syncStaffs();
         return ResponseEntity.ok().build();
     }
 }

@@ -26,6 +26,101 @@ public class SellsyOrderRequest {
     private String vat_mode = "debit";
     private List<SellsyRowRequest> rows = new ArrayList<>();
     private Long rate_category_id;
+    private SellsySettings settings;
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SellsySettings {
+        private SellsyPayments payments;
+        private SellsyPdfDisplay pdf_display;
+
+        public SellsyPayments getPayments() { return payments; }
+        public void setPayments(SellsyPayments payments) { this.payments = payments; }
+        public SellsyPdfDisplay getPdf_display() { return pdf_display; }
+        public void setPdf_display(SellsyPdfDisplay pdf_display) { this.pdf_display = pdf_display; }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SellsyPayments {
+        private List<String> payment_modules = new ArrayList<>();
+        private String direct_debit_module;
+
+        public List<String> getPayment_modules() { return payment_modules; }
+        public void setPayment_modules(List<String> payment_modules) { this.payment_modules = payment_modules; }
+        public String getDirect_debit_module() { return direct_debit_module; }
+        public void setDirect_debit_module(String direct_debit_module) { this.direct_debit_module = direct_debit_module; }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SellsyPdfDisplay {
+        private Boolean show_vat_mention = true;
+        private Boolean show_bank_account = true;
+        private Boolean show_check_label = true;
+        private Boolean show_contact_name = true;
+        private Boolean show_siret = true;
+        private Boolean show_siren = true;
+        private Boolean show_vat_number = true;
+        private Boolean show_company_reference = true;
+        private Boolean show_payment_methods = true;
+        private Boolean show_payment_terms = true;
+        private Boolean show_payment_deadlines = true;
+        private Boolean show_company_phone_number = true;
+        private Boolean show_delivery_address = true;
+        private Boolean show_barcode_values = true;
+        private Boolean show_barcode_images = true;
+        private Boolean show_reference_column = true;
+        private Boolean show_quantity_column = true;
+        private Boolean show_image_column = true;
+        private Boolean show_unit_cost_column = true;
+        private Boolean show_amount_column = true;
+        private Boolean show_taxes_column = true;
+        private Boolean show_discount_column = true;
+
+        // Getters and Setters omitted for brevity in search_replace if not needed, but better include them
+        public Boolean getShow_vat_mention() { return show_vat_mention; }
+        public void setShow_vat_mention(Boolean show_vat_mention) { this.show_vat_mention = show_vat_mention; }
+        public Boolean getShow_bank_account() { return show_bank_account; }
+        public void setShow_bank_account(Boolean show_bank_account) { this.show_bank_account = show_bank_account; }
+        public Boolean getShow_check_label() { return show_check_label; }
+        public void setShow_check_label(Boolean show_check_label) { this.show_check_label = show_check_label; }
+        public Boolean getShow_contact_name() { return show_contact_name; }
+        public void setShow_contact_name(Boolean show_contact_name) { this.show_contact_name = show_contact_name; }
+        public Boolean getShow_siret() { return show_siret; }
+        public void setShow_siret(Boolean show_siret) { this.show_siret = show_siret; }
+        public Boolean getShow_siren() { return show_siren; }
+        public void setShow_siren(Boolean show_siren) { this.show_siren = show_siren; }
+        public Boolean getShow_vat_number() { return show_vat_number; }
+        public void setShow_vat_number(Boolean show_vat_number) { this.show_vat_number = show_vat_number; }
+        public Boolean getShow_company_reference() { return show_company_reference; }
+        public void setShow_company_reference(Boolean show_company_reference) { this.show_company_reference = show_company_reference; }
+        public Boolean getShow_payment_methods() { return show_payment_methods; }
+        public void setShow_payment_methods(Boolean show_payment_methods) { this.show_payment_methods = show_payment_methods; }
+        public Boolean getShow_payment_terms() { return show_payment_terms; }
+        public void setShow_payment_terms(Boolean show_payment_terms) { this.show_payment_terms = show_payment_terms; }
+        public Boolean getShow_payment_deadlines() { return show_payment_deadlines; }
+        public void setShow_payment_deadlines(Boolean show_payment_deadlines) { this.show_payment_deadlines = show_payment_deadlines; }
+        public Boolean getShow_company_phone_number() { return show_company_phone_number; }
+        public void setShow_company_phone_number(Boolean show_company_phone_number) { this.show_company_phone_number = show_company_phone_number; }
+        public Boolean getShow_delivery_address() { return show_delivery_address; }
+        public void setShow_delivery_address(Boolean show_delivery_address) { this.show_delivery_address = show_delivery_address; }
+        public Boolean getShow_barcode_values() { return show_barcode_values; }
+        public void setShow_barcode_values(Boolean show_barcode_values) { this.show_barcode_values = show_barcode_values; }
+        public Boolean getShow_barcode_images() { return show_barcode_images; }
+        public void setShow_barcode_images(Boolean show_barcode_images) { this.show_barcode_images = show_barcode_images; }
+        public Boolean getShow_reference_column() { return show_reference_column; }
+        public void setShow_reference_column(Boolean show_reference_column) { this.show_reference_column = show_reference_column; }
+        public Boolean getShow_quantity_column() { return show_quantity_column; }
+        public void setShow_quantity_column(Boolean show_quantity_column) { this.show_quantity_column = show_quantity_column; }
+        public Boolean getShow_image_column() { return show_image_column; }
+        public void setShow_image_column(Boolean show_image_column) { this.show_image_column = show_image_column; }
+        public Boolean getShow_unit_cost_column() { return show_unit_cost_column; }
+        public void setShow_unit_cost_column(Boolean show_unit_cost_column) { this.show_unit_cost_column = show_unit_cost_column; }
+        public Boolean getShow_amount_column() { return show_amount_column; }
+        public void setShow_amount_column(Boolean show_amount_column) { this.show_amount_column = show_amount_column; }
+        public Boolean getShow_taxes_column() { return show_taxes_column; }
+        public void setShow_taxes_column(Boolean show_taxes_column) { this.show_taxes_column = show_taxes_column; }
+        public Boolean getShow_discount_column() { return show_discount_column; }
+        public void setShow_discount_column(Boolean show_discount_column) { this.show_discount_column = show_discount_column; }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SellsyRelated {
@@ -109,4 +204,6 @@ public class SellsyOrderRequest {
     public void setRows(List<SellsyRowRequest> rows) { this.rows = rows; }
     public Long getRate_category_id() { return rate_category_id; }
     public void setRate_category_id(Long rate_category_id) { this.rate_category_id = rate_category_id; }
+    public SellsySettings getSettings() { return settings; }
+    public void setSettings(SellsySettings settings) { this.settings = settings; }
 }

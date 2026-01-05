@@ -113,8 +113,8 @@ public class Product {
     public void setUnitId(Long unitId) { this.unitId = unitId; }
     public Long getCategoryId() { return categoryId; }
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
-    public String getPriceExcl_tax() { return priceExclTax; }
-    public void setPriceExcl_tax(String priceExclTax) { this.priceExclTax = priceExclTax; }
+    public String getPriceExclTax() { return priceExclTax; }
+    public void setPriceExclTax(String priceExclTax) { this.priceExclTax = priceExclTax; }
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
     public String getStandardQuantity() { return standardQuantity; }

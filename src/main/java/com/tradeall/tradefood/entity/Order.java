@@ -136,6 +136,12 @@ public class Order {
     @Column(name = "shipping_volume")
     private String shippingVolume;
 
+    @Column(name = "validation_code")
+    private String validationCode;
+
+    @Column(name = "is_validated")
+    private boolean validated = false;
+
     @Column(name = "sellsy_order_id")
     private String sellsyOrderId;
 
@@ -238,6 +244,12 @@ public class Order {
     public String getShippingVolume() { return shippingVolume; }
     public void setShippingVolume(String shippingVolume) { this.shippingVolume = shippingVolume; }
 
+    public String getValidationCode() { return validationCode; }
+    public void setValidationCode(String validationCode) { this.validationCode = validationCode; }
+
+    public boolean isValidated() { return validated; }
+    public void setValidated(boolean validated) { this.validated = validated; }
+
     public List<OrderItem> getItems() { return items; }
     public void setItems(List<OrderItem> items) { this.items = items; }
 
@@ -251,6 +263,7 @@ public class Order {
         private Double totalAmount;
         private OrderStatus status;
         private String sellsyOrderId;
+        private String validationCode;
         private List<OrderItem> items;
 
         public OrderBuilder user(User user) { this.user = user; return this; }
@@ -258,6 +271,7 @@ public class Order {
         public OrderBuilder totalAmount(Double totalAmount) { this.totalAmount = totalAmount; return this; }
         public OrderBuilder status(OrderStatus status) { this.status = status; return this; }
         public OrderBuilder sellsyOrderId(String sellsyOrderId) { this.sellsyOrderId = sellsyOrderId; return this; }
+        public OrderBuilder validationCode(String validationCode) { this.validationCode = validationCode; return this; }
         public OrderBuilder items(List<OrderItem> items) { this.items = items; return this; }
 
         public Order build() {
@@ -267,6 +281,7 @@ public class Order {
             order.setTotalAmount(totalAmount);
             order.setStatus(status);
             order.setSellsyOrderId(sellsyOrderId);
+            order.setValidationCode(validationCode);
             if (items != null) order.setItems(items);
             return order;
         }

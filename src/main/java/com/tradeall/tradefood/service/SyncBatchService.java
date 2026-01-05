@@ -23,7 +23,6 @@ public class SyncBatchService {
         this.userService = userService;
     }
 
-    @jakarta.annotation.PostConstruct
     public void initSync() {
         log.info("Lancement de la synchronisation initiale au démarrage...");
         categoryService.syncCategoriesV1();

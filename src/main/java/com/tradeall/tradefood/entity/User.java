@@ -122,6 +122,10 @@ public class User implements UserDetails {
     @Column(name = "role")
     private Role role;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "commercial_id")
+    private User commercial;
+
     @Column(name = "sellsy_type")
     private String sellsyType;
 
@@ -248,6 +252,14 @@ public class User implements UserDetails {
     public List<String> getMarketingCampaignsSubscriptions() { return marketingCampaignsSubscriptions; }
     public void setMarketingCampaignsSubscriptions(List<String> marketingCampaignsSubscriptions) { this.marketingCampaignsSubscriptions = marketingCampaignsSubscriptions; }
 
+    public User getCommercial() {
+        return commercial;
+    }
+
+    public void setCommercial(User commercial) {
+        this.commercial = commercial;
+    }
+
     public Role getRole() {
         return role;
     }
@@ -372,6 +384,7 @@ public class User implements UserDetails {
         private String firstName;
         private String lastName;
         private Role role;
+        private User commercial;
         private String sellsyType;
         private String companyName;
         private String siret;
@@ -387,6 +400,7 @@ public class User implements UserDetails {
         public UserBuilder firstName(String firstName) { this.firstName = firstName; return this; }
         public UserBuilder lastName(String lastName) { this.lastName = lastName; return this; }
         public UserBuilder role(Role role) { this.role = role; return this; }
+        public UserBuilder commercial(User commercial) { this.commercial = commercial; return this; }
         public UserBuilder sellsyType(String sellsyType) { this.sellsyType = sellsyType; return this; }
         public UserBuilder companyName(String companyName) { this.companyName = companyName; return this; }
         public UserBuilder siret(String siret) { this.siret = siret; return this; }
@@ -404,6 +418,7 @@ public class User implements UserDetails {
             user.setFirstName(firstName);
             user.setLastName(lastName);
             user.setRole(role);
+            user.setCommercial(commercial);
             user.setSellsyType(sellsyType);
             user.setCompanyName(companyName);
             user.setSiret(siret);
@@ -446,7 +461,9 @@ public class User implements UserDetails {
     }
 
     public enum Role {
-        ROLE_USER,
+        ROLE_CLIENT,
+        ROLE_COMMERCIAL,
+        ROLE_LIVREUR,
         ROLE_ADMIN
     }
 }

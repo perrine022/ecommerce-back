@@ -115,7 +115,6 @@ public class ProductService {
         productRepository.deleteById(id);
     }
 
-    @Transactional
     public void syncProducts() {
         log.info("Début de la synchronisation des produits depuis Sellsy...");
         int limit = 100;
@@ -147,7 +146,7 @@ public class ProductService {
                     product.setTaxId(sp.getTax_id());
                     product.setUnitId(sp.getUnit_id());
                     product.setCategoryId(sp.getCategory_id());
-                    product.setPriceExcl_tax(sp.getPrice_excl_tax());
+                    product.setPriceExclTax(sp.getPrice_excl_tax());
                     product.setCurrency(sp.getCurrency());
                     product.setStandardQuantity(sp.getStandard_quantity());
                     product.setIsNameIncludedInDescription(sp.getIs_name_included_in_description());

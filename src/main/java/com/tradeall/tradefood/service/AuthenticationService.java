@@ -135,7 +135,7 @@ public class AuthenticationService {
                 .lastName(request.getLastName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(User.Role.ROLE_USER)
+                .role(User.Role.ROLE_CLIENT)
                 .sellsyType("prospect")
                 .companyName(request.getCompanyName())
                 .siret(request.getSiret())
