@@ -130,57 +130,101 @@ public class UserController {
      * Récupère les adresses de l'utilisateur.
      */
     @GetMapping("/addresses")
-    public reactor.core.publisher.Mono<ResponseEntity<?>> getAddresses(
+    public ResponseEntity<?> getAddresses(
             @AuthenticationPrincipal User user,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset) {
         log.info("Récupération des adresses pour l'utilisateur: {}", user.getEmail());
-        return userService.getUserAddresses(user.getId(), limit, offset)
-                .map(response -> {
-                    try {
-                        String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(response.getData());
-                        log.info("Adresses récupérées pour {}: {}", user.getEmail(), json);
-                    } catch (Exception e) {
-                        log.warn("Impossible de loguer les adresses: {}", e.getMessage());
-                    }
-                    return ResponseEntity.ok(response);
-                });
+        com.tradeall.tradefood.dto.sellsy.SellsyResponse<com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO> response = 
+            userService.getUserAddresses(user.getId(), limit, offset).block();
+        try {
+            String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(response.getData());
+            log.info("Adresses récupérées pour {}: {}", user.getEmail(), json);
+        } catch (Exception e) {
+            log.warn("Impossible de loguer les adresses: {}", e.getMessage());
+        }
+        return ResponseEntity.ok(response);
     }
 
     /**
      * Crée une nouvelle adresse pour l'utilisateur.
      */
     @PostMapping("/addresses")
-    public reactor.core.publisher.Mono<ResponseEntity<?>> createAddress(
+    public ResponseEntity<?> createAddress(
             @AuthenticationPrincipal User user,
             @RequestBody com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO addressDTO) {
         log.info("Création d'une adresse pour l'utilisateur: {}", user.getEmail());
-        return userService.createUserAddress(user.getId(), addressDTO)
-                .map(ResponseEntity::ok);
+        com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO created = userService.createUserAddress(user.getId(), addressDTO).block();
+        return ResponseEntity.ok(created);
     }
 
     /**
      * Met à jour une adresse existante de l'utilisateur.
      */
     @PutMapping("/addresses/{addressId}")
-    public reactor.core.publisher.Mono<ResponseEntity<?>> updateAddress(
+    public ResponseEntity<?> updateAddress(
             @AuthenticationPrincipal User user,
             @PathVariable Long addressId,
             @RequestBody com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO addressDTO) {
         log.info("Mise à jour de l'adresse ID: {} pour l'utilisateur: {}", addressId, user.getEmail());
-        return userService.updateUserAddress(user.getId(), addressId, addressDTO)
-                .map(ResponseEntity::ok);
+        com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO updated = userService.updateUserAddress(user.getId(), addressId, addressDTO).block();
+        return ResponseEntity.ok(updated);
     }
 
     /**
      * Supprime une adresse de l'utilisateur.
      */
     @DeleteMapping("/addresses/{addressId}")
-    public reactor.core.publisher.Mono<ResponseEntity<?>> deleteAddress(
+    public ResponseEntity<?> deleteAddress(
             @AuthenticationPrincipal User user,
             @PathVariable Long addressId) {
         log.info("Suppression de l'adresse ID: {} pour l'utilisateur: {}", addressId, user.getEmail());
-        return userService.deleteUserAddress(user.getId(), addressId)
-                .then(reactor.core.publisher.Mono.just(ResponseEntity.ok().build()));
+        userService.deleteUserAddress(user.getId(), addressId).block();
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Permet à un commercial ou admin de mettre à jour l'adresse d'un client spécifique.
+     */
+    @PutMapping("/{userId}/addresses/{addressId}")
+    @PreAuthorize("hasAnyRole('COMMERCIAL', 'ADMIN')")
+    public ResponseEntity<?> updateClientAddress(
+            @AuthenticationPrincipal User actor,
+            @PathVariable UUID userId,
+            @PathVariable Long addressId,
+            @RequestBody com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO addressDTO) {
+        log.info("Le commercial/admin {} met à jour l'adresse {} du client {}", actor.getEmail(), addressId, userId);
+        com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO updated = userService.updateUserAddress(userId, addressId, addressDTO).block();
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Permet à un commercial ou admin de créer une adresse pour un client spécifique.
+     */
+    @PostMapping("/{userId}/addresses")
+    @PreAuthorize("hasAnyRole('COMMERCIAL', 'ADMIN')")
+    public ResponseEntity<?> createClientAddress(
+            @AuthenticationPrincipal User actor,
+            @PathVariable UUID userId,
+            @RequestBody com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO addressDTO) {
+        log.info("Le commercial/admin {} crée une adresse pour le client {}", actor.getEmail(), userId);
+        com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO created = userService.createUserAddress(userId, addressDTO).block();
+        return ResponseEntity.ok(created);
+    }
+
+    /**
+     * Permet à un commercial ou admin de récupérer les adresses d'un client spécifique.
+     */
+    @GetMapping("/{userId}/addresses")
+    @PreAuthorize("hasAnyRole('COMMERCIAL', 'ADMIN')")
+    public ResponseEntity<?> getClientAddresses(
+            @AuthenticationPrincipal User actor,
+            @PathVariable UUID userId,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        log.info("Le commercial/admin {} récupère les adresses du client {}", actor.getEmail(), userId);
+        com.tradeall.tradefood.dto.sellsy.SellsyResponse<com.tradeall.tradefood.dto.sellsy.SellsyAddressDTO> response = 
+            userService.getUserAddresses(userId, limit, offset).block();
+        return ResponseEntity.ok(response);
     }
 }
