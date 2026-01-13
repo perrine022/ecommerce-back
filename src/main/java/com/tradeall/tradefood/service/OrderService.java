@@ -3,13 +3,18 @@ package com.tradeall.tradefood.service;
 import com.tradeall.tradefood.client.SellsyClient;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrder;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrderRequest;
+import com.tradeall.tradefood.dto.sellsy.SellsyPaymentRequest;
+import com.tradeall.tradefood.dto.sellsy.SellsyPaymentResponse;
+import com.tradeall.tradefood.dto.sellsy.SellsyLinkPaymentRequest;
 import com.tradeall.tradefood.entity.Order;
 import com.tradeall.tradefood.entity.OrderItem;
 import com.tradeall.tradefood.entity.User;
 import com.tradeall.tradefood.entity.Product;
+import com.tradeall.tradefood.entity.Payment;
 import com.tradeall.tradefood.repository.OrderRepository;
 import com.tradeall.tradefood.repository.ProductRepository;
 import com.tradeall.tradefood.repository.UserRepository;
+import com.tradeall.tradefood.repository.PaymentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -33,12 +38,16 @@ public class OrderService {
     private final SellsyClient sellsyClient;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final PaymentRepository paymentRepository;
 
-    public OrderService(OrderRepository orderRepository, SellsyClient sellsyClient, ProductRepository productRepository, UserRepository userRepository) {
+    public OrderService(OrderRepository orderRepository, SellsyClient sellsyClient, 
+                        ProductRepository productRepository, UserRepository userRepository,
+                        PaymentRepository paymentRepository) {
         this.orderRepository = orderRepository;
         this.sellsyClient = sellsyClient;
         this.productRepository = productRepository;
         this.userRepository = userRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     /**
@@ -256,12 +265,78 @@ public class OrderService {
                 order.setSellsyOrderId(response.getId().toString());
                 order.setNumber(response.getNumber());
                 orderRepository.save(order);
+                
+                // Gérer le paiement Sellsy
+                handleSellsyPayment(order, response.getId(), Double.parseDouble(response.getAmounts().getTotal_incl_tax()));
             },
             error -> {
                 log.error("Erreur lors de la création de la commande Sellsy pour la commande locale ID: {}. Erreur: {}", order.getId(), error.getMessage());
                 if (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
                     org.springframework.web.reactive.function.client.WebClientResponseException we = (org.springframework.web.reactive.function.client.WebClientResponseException) error;
                     log.error("[SELLSY] Réponse d'erreur Sellsy: {}", we.getResponseBodyAsString());
+                }
+            }
+        );
+    }
+
+    /**
+     * Gère la création et la liaison du paiement dans Sellsy.
+     */
+    private void handleSellsyPayment(Order order, Long sellsyOrderId, Double amount) {
+        log.info("Début de la gestion du paiement Sellsy pour la commande: {}", sellsyOrderId);
+        
+        // Recherche d'un paiement Stripe récent pour cet utilisateur
+        List<Payment> userPayments = paymentRepository.findByUserId(order.getUser().getId());
+        String stripeId = "Non spécifié";
+        if (!userPayments.isEmpty()) {
+            // On prend le plus récent
+            Payment lastPayment = userPayments.stream()
+                    .sorted(Comparator.comparing(Payment::getPaymentDate).reversed())
+                    .findFirst()
+                    .orElse(null);
+            if (lastPayment != null && lastPayment.getPaymentIntent() != null) {
+                stripeId = lastPayment.getPaymentIntent();
+                log.debug("ID Stripe trouvé pour le paiement Sellsy: {}", stripeId);
+            }
+        }
+
+        SellsyPaymentRequest paymentRequest = new SellsyPaymentRequest();
+        paymentRequest.setNumber("PAY-" + order.getId());
+        paymentRequest.setPaid_at(java.time.OffsetDateTime.now().toString());
+        // On utilise l'ID 7 comme dans l'exemple, ou on peut le rendre configurable. 
+        // L'utilisateur mentionne de créer un type "stripe". 
+        // Pour l'instant on utilise un ID qui semble correspondre à un mode de paiement manuel/tiers.
+        paymentRequest.setPayment_method_id(7); 
+        paymentRequest.setType("credit");
+        paymentRequest.setNote("Paiement Stripe: " + stripeId);
+        
+        SellsyPaymentRequest.SellsyAmount sellsyAmount = new SellsyPaymentRequest.SellsyAmount();
+        sellsyAmount.setValue(String.format(Locale.US, "%.2f", amount));
+        sellsyAmount.setCurrency("EUR");
+        paymentRequest.setAmount(sellsyAmount);
+
+        Long sellsyUserId = order.getUser().getSellsyId();
+        String sellsyType = order.getUser().getSellsyType(); // "company" ou "individual"
+        
+        reactor.core.publisher.Mono<SellsyPaymentResponse> createPaymentMono;
+        if ("individual".equalsIgnoreCase(sellsyType)) {
+            createPaymentMono = sellsyClient.createPaymentForIndividual(sellsyUserId, paymentRequest);
+        } else {
+            createPaymentMono = sellsyClient.createPaymentForCompany(sellsyUserId, paymentRequest);
+        }
+
+        createPaymentMono.flatMap(paymentResponse -> {
+            log.info("Paiement Sellsy créé avec succès. ID: {}. Liaison à la facture: {}", paymentResponse.getId(), sellsyOrderId);
+            SellsyLinkPaymentRequest linkRequest = new SellsyLinkPaymentRequest();
+            linkRequest.setAmount(amount);
+            return sellsyClient.linkPaymentToInvoice(sellsyOrderId, paymentResponse.getId(), linkRequest);
+        }).subscribe(
+            success -> log.info("Paiement lié avec succès à la facture Sellsy ID: {}", sellsyOrderId),
+            error -> {
+                log.error("Erreur lors de la gestion du paiement Sellsy pour la commande {}: {}", sellsyOrderId, error.getMessage());
+                if (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
+                    org.springframework.web.reactive.function.client.WebClientResponseException we = (org.springframework.web.reactive.function.client.WebClientResponseException) error;
+                    log.error("[SELLSY] Réponse d'erreur (Paiement/Liaison): {}", we.getResponseBodyAsString());
                 }
             }
         );

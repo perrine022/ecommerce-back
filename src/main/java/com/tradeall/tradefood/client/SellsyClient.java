@@ -12,6 +12,9 @@ import com.tradeall.tradefood.dto.sellsy.SellsyOrderRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyProduct;
 import com.tradeall.tradefood.dto.sellsy.SellsyResponse;
 import com.tradeall.tradefood.dto.sellsy.SellsyStaff;
+import com.tradeall.tradefood.dto.sellsy.SellsyPaymentRequest;
+import com.tradeall.tradefood.dto.sellsy.SellsyPaymentResponse;
+import com.tradeall.tradefood.dto.sellsy.SellsyLinkPaymentRequest;
 import com.tradeall.tradefood.service.SellsyAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -217,6 +220,63 @@ public class SellsyClient {
                 .bodyValue(contact)
                 .retrieve()
                 .bodyToMono(SellsyContact.class);
+    }
+
+    /**
+     * Crée un paiement pour une compagnie.
+     */
+    public Mono<SellsyPaymentResponse> createPaymentForCompany(Long companyId, SellsyPaymentRequest payment) {
+        log.debug("Appel Sellsy POST /companies/{}/payments", companyId);
+        return sellsyWebClient.post()
+                .uri("/companies/" + companyId + "/payments")
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .bodyValue(payment)
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy createPaymentForCompany: {}", body);
+                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                    })
+                )
+                .bodyToMono(SellsyPaymentResponse.class);
+    }
+
+    /**
+     * Crée un paiement pour un particulier.
+     */
+    public Mono<SellsyPaymentResponse> createPaymentForIndividual(Long individualId, SellsyPaymentRequest payment) {
+        log.debug("Appel Sellsy POST /individuals/{}/payments", individualId);
+        return sellsyWebClient.post()
+                .uri("/individuals/" + individualId + "/payments")
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .bodyValue(payment)
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy createPaymentForIndividual: {}", body);
+                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                    })
+                )
+                .bodyToMono(SellsyPaymentResponse.class);
+    }
+
+    /**
+     * Lie un paiement à une facture.
+     */
+    public Mono<Void> linkPaymentToInvoice(Long invoiceId, Long paymentId, SellsyLinkPaymentRequest request) {
+        log.debug("Appel Sellsy POST /invoices/{}/payments/{}", invoiceId, paymentId);
+        return sellsyWebClient.post()
+                .uri("/invoices/" + invoiceId + "/payments/" + paymentId)
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .bodyValue(request)
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy linkPaymentToInvoice: {}", body);
+                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                    })
+                )
+                .bodyToMono(Void.class);
     }
 
     /**
