@@ -147,17 +147,19 @@ public class OrderController {
     }
 
     /**
-     * Valide une commande avec un code à 4 chiffres.
+     * Valide une commande avec un code à 4 chiffres pour un utilisateur donné.
+     * Accessible par les logisticiens ou admins.
      * @param id L'identifiant de la commande.
+     * @param userId L'identifiant de l'utilisateur.
      * @param payload Map contenant le code "code".
      * @return La commande validée.
      */
-    @PostMapping("/{id}/validate")
-    public ResponseEntity<Order> validateOrder(@PathVariable java.util.UUID id, @RequestBody Map<String, String> payload) {
+    @PostMapping("/{id}/user/{userId}/validate")
+    public ResponseEntity<Order> validateOrderForUser(@PathVariable java.util.UUID id, @PathVariable java.util.UUID userId, @RequestBody Map<String, String> payload) {
         String code = payload.get("code");
-        log.info("Validation de la commande ID: {} avec le code: {}", id, code);
+        log.info("Validation de la commande ID: {} pour l'utilisateur ID: {} avec le code: {}", id, userId, code);
         try {
-            Order validatedOrder = orderService.validateOrderWithCode(id, code);
+            Order validatedOrder = orderService.validateOrderWithCode(id, userId, code);
             return ResponseEntity.ok(validatedOrder);
         } catch (RuntimeException e) {
             log.warn("Échec de la validation pour la commande ID: {}. Raison: {}", id, e.getMessage());

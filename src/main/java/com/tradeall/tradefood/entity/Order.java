@@ -173,7 +173,8 @@ public class Order {
         PENDING,
         PAID,
         CANCELLED,
-        SHIPPED
+        SHIPPED,
+        DELIVERED
     }
 
     public Order() {}

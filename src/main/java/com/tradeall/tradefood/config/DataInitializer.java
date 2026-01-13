@@ -17,9 +17,8 @@ public class DataInitializer {
     @Bean
     public CommandLineRunner initData(UserRepository userRepository, PasswordEncoder passwordEncoder, SyncBatchService syncBatchService) {
         return args -> {
-            // Lancement de la synchronisation automatique au démarrage
-            System.out.println("Lancement de la synchronisation automatique au démarrage...");
-            syncBatchService.initSync();
+            // Synchronisation automatique désactivée au démarrage
+            // syncBatchService.initSync();
 
             String email = "perrine@gmail.com";
             if (userRepository.findByEmail(email).isEmpty()) {

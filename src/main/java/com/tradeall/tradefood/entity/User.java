@@ -472,6 +472,7 @@ public class User implements UserDetails {
     public enum Role {
         ROLE_CLIENT,
         ROLE_COMMERCIAL,
+        ROLE_LOGISTICIEN,
         ROLE_LIVREUR,
         ROLE_ADMIN,
         ROLE_USER

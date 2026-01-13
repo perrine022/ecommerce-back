@@ -7,6 +7,7 @@ import com.tradeall.tradefood.dto.sellsy.SellsyAddressRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyCompany;
 import com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyIndividual;
+import com.tradeall.tradefood.dto.sellsy.SellsyInvoice;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrder;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrderRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyProduct;
@@ -15,6 +16,7 @@ import com.tradeall.tradefood.dto.sellsy.SellsyStaff;
 import com.tradeall.tradefood.dto.sellsy.SellsyPaymentRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyPaymentResponse;
 import com.tradeall.tradefood.dto.sellsy.SellsyLinkPaymentRequest;
+import com.tradeall.tradefood.dto.sellsy.SellsyPaymentMethod;
 import com.tradeall.tradefood.service.SellsyAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,6 +190,12 @@ public class SellsyClient {
                 .uri("/contacts/" + contactId)
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy getContact (contactId: {}): {}", contactId, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error getContact (contactId: " + contactId + "): " + body));
+                    })
+                )
                 .bodyToMono(SellsyContact.class);
     }
 
@@ -219,6 +227,12 @@ public class SellsyClient {
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .bodyValue(contact)
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy updateContact (contactId: {}): {}", contactId, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error updateContact (contactId: " + contactId + "): " + body));
+                    })
+                )
                 .bodyToMono(SellsyContact.class);
     }
 
@@ -234,8 +248,8 @@ public class SellsyClient {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError(), response -> 
                     response.bodyToMono(String.class).flatMap(body -> {
-                        log.error("Erreur 4xx Sellsy createPaymentForCompany: {}", body);
-                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                        log.error("Erreur 4xx Sellsy createPaymentForCompany (companyId: {}): {}", companyId, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error createPaymentForCompany (companyId: " + companyId + "): " + body));
                     })
                 )
                 .bodyToMono(SellsyPaymentResponse.class);
@@ -253,8 +267,8 @@ public class SellsyClient {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError(), response -> 
                     response.bodyToMono(String.class).flatMap(body -> {
-                        log.error("Erreur 4xx Sellsy createPaymentForIndividual: {}", body);
-                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                        log.error("Erreur 4xx Sellsy createPaymentForIndividual (individualId: {}): {}", individualId, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error createPaymentForIndividual (individualId: " + individualId + "): " + body));
                     })
                 )
                 .bodyToMono(SellsyPaymentResponse.class);
@@ -272,11 +286,23 @@ public class SellsyClient {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError(), response -> 
                     response.bodyToMono(String.class).flatMap(body -> {
-                        log.error("Erreur 4xx Sellsy linkPaymentToInvoice: {}", body);
-                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                        log.error("Erreur 4xx Sellsy linkPaymentToInvoice (invoiceId: {}, paymentId: {}): {}", invoiceId, paymentId, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error linkPaymentToInvoice (invoiceId: " + invoiceId + ", paymentId: " + paymentId + "): " + body));
                     })
                 )
                 .bodyToMono(Void.class);
+    }
+
+    /**
+     * Récupère la liste des méthodes de paiement.
+     */
+    public Mono<SellsyResponse<SellsyPaymentMethod>> getPaymentMethods() {
+        log.debug("Appel Sellsy GET /payments/methods");
+        return sellsyWebClient.get()
+                .uri("/payments/methods")
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyPaymentMethod>>() {});
     }
 
     /**
@@ -322,7 +348,7 @@ public class SellsyClient {
                 .onStatus(status -> status.is4xxClientError(), response -> 
                     response.bodyToMono(String.class).flatMap(body -> {
                         log.error("Erreur 4xx Sellsy: {}", body);
-                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                        return Mono.error(new RuntimeException("Sellsy API Error createCompany: " + body));
                     })
                 )
                 .bodyToMono(SellsyCompany.class)
@@ -346,8 +372,8 @@ public class SellsyClient {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError(), response -> 
                     response.bodyToMono(String.class).flatMap(body -> {
-                        log.error("Erreur 4xx Sellsy getAddresses: {}", body);
-                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                        log.error("Erreur 4xx Sellsy getAddresses (type: {}, id: {}): {}", type, id, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error getAddresses (type: " + type + ", id: " + id + "): " + body));
                     })
                 )
                 .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyAddressDTO>>() {});
@@ -366,8 +392,8 @@ public class SellsyClient {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError(), response -> 
                     response.bodyToMono(String.class).flatMap(body -> {
-                        log.error("Erreur 4xx Sellsy createAddress: {}", body);
-                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                        log.error("Erreur 4xx Sellsy createAddress (type: {}, id: {}): {}", type, id, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error createAddress (type: " + type + ", id: " + id + "): " + body));
                     })
                 )
                 .bodyToMono(SellsyAddressDTO.class);
@@ -386,8 +412,8 @@ public class SellsyClient {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError(), response -> 
                     response.bodyToMono(String.class).flatMap(body -> {
-                        log.error("Erreur 4xx Sellsy updateAddress: {}", body);
-                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                        log.error("Erreur 4xx Sellsy updateAddress (type: {}, id: {}, addressId: {}): {}", type, id, addressId, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error updateAddress (type: " + type + ", id: " + id + ", addressId: " + addressId + "): " + body));
                     })
                 )
                 .bodyToMono(SellsyAddressDTO.class);
@@ -405,8 +431,8 @@ public class SellsyClient {
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError(), response -> 
                     response.bodyToMono(String.class).flatMap(body -> {
-                        log.error("Erreur 4xx Sellsy deleteAddress: {}", body);
-                        return Mono.error(new RuntimeException("Sellsy API Error: " + body));
+                        log.error("Erreur 4xx Sellsy deleteAddress (type: {}, id: {}, addressId: {}): {}", type, id, addressId, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error deleteAddress (type: " + type + ", id: " + id + ", addressId: " + addressId + "): " + body));
                     })
                 )
                 .bodyToMono(Void.class);
@@ -468,12 +494,37 @@ public class SellsyClient {
                         .build())
                 .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
                 .retrieve()
-                .onStatus(status -> status.is4xxClientError(), response ->
-                        response.bodyToMono(String.class).flatMap(body -> {
-                            log.error("Erreur 4xx Sellsy getStaffs: {}", body);
-                            return Mono.error(new RuntimeException("Sellsy API Error: " + body));
-                        })
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy getStaffs (limit: {}, offset: {}): {}", limit, offset, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error getStaffs (limit: " + limit + ", offset: " + offset + "): " + body));
+                    })
                 )
                 .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyStaff>>() {});
+    }
+
+    /**
+     * Récupère la liste des factures depuis Sellsy.
+     * @param limit Nombre maximum.
+     * @param offset Décalage.
+     * @return Un Mono contenant la réponse paginée.
+     */
+    public Mono<SellsyResponse<SellsyInvoice>> getInvoices(int limit, int offset) {
+        log.debug("Appel Sellsy GET /invoices (limit: {}, offset: {})", limit, offset);
+        return sellsyWebClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/invoices")
+                        .queryParam("limit", limit)
+                        .queryParam("offset", offset)
+                        .build())
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError(), response -> 
+                    response.bodyToMono(String.class).flatMap(body -> {
+                        log.error("Erreur 4xx Sellsy getInvoices (limit: {}, offset: {}): {}", limit, offset, body);
+                        return Mono.error(new RuntimeException("Sellsy API Error getInvoices (limit: " + limit + ", offset: " + offset + "): " + body));
+                    })
+                )
+                .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyInvoice>>() {});
     }
 }

@@ -6,6 +6,7 @@ import com.tradeall.tradefood.dto.sellsy.SellsyOrderRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyPaymentRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyPaymentResponse;
 import com.tradeall.tradefood.dto.sellsy.SellsyLinkPaymentRequest;
+import com.tradeall.tradefood.dto.sellsy.SellsyPaymentMethod;
 import com.tradeall.tradefood.entity.Order;
 import com.tradeall.tradefood.entity.OrderItem;
 import com.tradeall.tradefood.entity.User;
@@ -95,14 +96,21 @@ public class OrderService {
     }
 
     /**
-     * Valide une commande avec un code à 4 chiffres.
+     * Valide une commande avec un code à 4 chiffres pour un utilisateur donné.
      */
     @Transactional
-    public Order validateOrderWithCode(UUID orderId, String code) {
+    public Order validateOrderWithCode(UUID orderId, UUID userId, String code) {
         Order order = getOrderById(orderId);
+        
+        if (!order.getUser().getId().equals(userId)) {
+            log.warn("Tentative de validation de la commande ID: {} pour un utilisateur incorrect. Attendu: {}, Reçu: {}", 
+                    orderId, order.getUser().getId(), userId);
+            throw new RuntimeException("La commande n'appartient pas à l'utilisateur spécifié");
+        }
+
         if (order.getValidationCode() != null && order.getValidationCode().equals(code)) {
             order.setValidated(true);
-            order.setStatus(Order.OrderStatus.PAID); // Ou un autre statut si nécessaire, ex: DELIVERED si il existe
+            order.setStatus(Order.OrderStatus.DELIVERED);
             return orderRepository.save(order);
         } else {
             throw new RuntimeException("Code de validation incorrect");
@@ -267,7 +275,19 @@ public class OrderService {
                 orderRepository.save(order);
                 
                 // Gérer le paiement Sellsy
-                handleSellsyPayment(order, response.getId(), Double.parseDouble(response.getAmounts().getTotal_incl_tax()));
+                // Le endpoint de liaison nécessite un documentId (Invoice identifier)
+                // Dans la réponse SellsyOrder, on cherche s'il y a un document lié de type invoice
+                Long targetDocumentId = response.getId(); // Par défaut on garde l'id de la commande
+                if (response.getRelated() != null) {
+                    for (SellsyOrder.SellsyRelated rel : response.getRelated()) {
+                        log.info("Document lié à la commande Sellsy {}: ID {}, Type {}", response.getId(), rel.getId(), rel.getType());
+                        if ("invoice".equalsIgnoreCase(rel.getType())) {
+                            targetDocumentId = rel.getId();
+                            log.info("Facture Sellsy identifiée pour liaison du paiement: ID {}", targetDocumentId);
+                        }
+                    }
+                }
+                handleSellsyPayment(order, targetDocumentId, Double.parseDouble(response.getAmounts().getTotal_excl_tax()));
             },
             error -> {
                 log.error("Erreur lors de la création de la commande Sellsy pour la commande locale ID: {}. Erreur: {}", order.getId(), error.getMessage());
@@ -300,36 +320,57 @@ public class OrderService {
             }
         }
 
-        SellsyPaymentRequest paymentRequest = new SellsyPaymentRequest();
-        paymentRequest.setNumber("PAY-" + order.getId());
-        paymentRequest.setPaid_at(java.time.OffsetDateTime.now().toString());
-        // On utilise l'ID 7 comme dans l'exemple, ou on peut le rendre configurable. 
-        // L'utilisateur mentionne de créer un type "stripe". 
-        // Pour l'instant on utilise un ID qui semble correspondre à un mode de paiement manuel/tiers.
-        paymentRequest.setPayment_method_id(7); 
-        paymentRequest.setType("credit");
-        paymentRequest.setNote("Paiement Stripe: " + stripeId);
-        
-        SellsyPaymentRequest.SellsyAmount sellsyAmount = new SellsyPaymentRequest.SellsyAmount();
-        sellsyAmount.setValue(String.format(Locale.US, "%.2f", amount));
-        sellsyAmount.setCurrency("EUR");
-        paymentRequest.setAmount(sellsyAmount);
+        final String finalStripeId = stripeId;
 
-        Long sellsyUserId = order.getUser().getSellsyId();
-        String sellsyType = order.getUser().getSellsyType(); // "company" ou "individual"
-        
-        reactor.core.publisher.Mono<SellsyPaymentResponse> createPaymentMono;
-        if ("individual".equalsIgnoreCase(sellsyType)) {
-            createPaymentMono = sellsyClient.createPaymentForIndividual(sellsyUserId, paymentRequest);
-        } else {
-            createPaymentMono = sellsyClient.createPaymentForCompany(sellsyUserId, paymentRequest);
-        }
+        // Récupération dynamique de la méthode de paiement "stripe"
+        sellsyClient.getPaymentMethods().flatMap(methodsResponse -> {
+            Long methodId = methodsResponse.getData().stream()
+                    .filter(m -> "stripe".equalsIgnoreCase(m.getLabel()))
+                    .map(SellsyPaymentMethod::getId)
+                    .findFirst()
+                    .orElse(7L); // Valeur par défaut si non trouvé (à adapter si besoin)
+            
+            log.info("Méthode de paiement 'stripe' trouvée avec l'ID: {}", methodId);
 
-        createPaymentMono.flatMap(paymentResponse -> {
+            SellsyPaymentRequest paymentRequest = new SellsyPaymentRequest();
+            paymentRequest.setNumber("PAY-" + order.getId());
+            paymentRequest.setPaid_at(java.time.OffsetDateTime.now().toString());
+            paymentRequest.setPayment_method_id(methodId.intValue());
+            paymentRequest.setType("credit");
+            paymentRequest.setNote("Paiement Stripe: " + finalStripeId);
+            
+            SellsyPaymentRequest.SellsyAmount sellsyAmount = new SellsyPaymentRequest.SellsyAmount();
+            sellsyAmount.setValue(String.format(Locale.US, "%.2f", amount));
+            sellsyAmount.setCurrency("EUR");
+            paymentRequest.setAmount(sellsyAmount);
+
+            Long sellsyUserId = order.getUser().getSellsyId();
+            String sellsyType = order.getUser().getSellsyType(); // "company" ou "individual"
+            
+            if ("individual".equalsIgnoreCase(sellsyType)) {
+                return sellsyClient.createPaymentForIndividual(sellsyUserId, paymentRequest);
+            } else {
+                return sellsyClient.createPaymentForCompany(sellsyUserId, paymentRequest);
+            }
+        }).flatMap(paymentResponse -> {
             log.info("Paiement Sellsy créé avec succès. ID: {}. Liaison à la facture: {}", paymentResponse.getId(), sellsyOrderId);
-            SellsyLinkPaymentRequest linkRequest = new SellsyLinkPaymentRequest();
-            linkRequest.setAmount(amount);
-            return sellsyClient.linkPaymentToInvoice(sellsyOrderId, paymentResponse.getId(), linkRequest);
+            
+            // Récupération de la liste des factures avant la liaison (demande utilisateur)
+            return sellsyClient.getInvoices(50, 0)
+                .doOnNext(invoicesResponse -> {
+                    log.info("[SELLSY] Liste des factures récupérée avant liaison (Total: {})", 
+                        invoicesResponse.getPagination() != null ? invoicesResponse.getPagination().getTotal() : "inconnu");
+                    invoicesResponse.getData().forEach(inv -> 
+                        log.info("[SELLSY] Facture trouvée - ID: {}, Numéro: {}, Statut: {}, Montant: {}", 
+                            inv.getId(), inv.getNumber(), inv.getStatus(), 
+                            inv.getAmounts() != null ? inv.getAmounts().getTotal_incl_tax() : "N/A")
+                    );
+                })
+                .flatMap(invoicesResponse -> {
+                    SellsyLinkPaymentRequest linkRequest = new SellsyLinkPaymentRequest();
+                    linkRequest.setAmount(amount);
+                    return sellsyClient.linkPaymentToInvoice(sellsyOrderId, paymentResponse.getId(), linkRequest);
+                });
         }).subscribe(
             success -> log.info("Paiement lié avec succès à la facture Sellsy ID: {}", sellsyOrderId),
             error -> {

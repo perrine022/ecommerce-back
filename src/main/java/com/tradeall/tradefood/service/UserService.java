@@ -168,7 +168,13 @@ public class UserService {
                             user.setLastName(dto.getLastname());
                             user.setEmail(dto.getEmail());
                             user.setSellsyId(dto.getId());
-                            user.setRole(User.Role.ROLE_COMMERCIAL);
+
+                            if ("Logisticien(ne)".equalsIgnoreCase(dto.getPosition())) {
+                                user.setRole(User.Role.ROLE_LOGISTICIEN);
+                            } else {
+                                user.setRole(User.Role.ROLE_COMMERCIAL);
+                            }
+
                             user.setActive(true);
 
                             if (isNew) {
