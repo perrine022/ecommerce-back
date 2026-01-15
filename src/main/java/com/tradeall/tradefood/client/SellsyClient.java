@@ -8,6 +8,7 @@ import com.tradeall.tradefood.dto.sellsy.SellsyCompany;
 import com.tradeall.tradefood.dto.sellsy.SellsyCompanyRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyIndividual;
 import com.tradeall.tradefood.dto.sellsy.SellsyInvoice;
+import com.tradeall.tradefood.dto.sellsy.SellsyInvoiceRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrder;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrderRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyProduct;
@@ -501,6 +502,20 @@ public class SellsyClient {
                     })
                 )
                 .bodyToMono(new ParameterizedTypeReference<SellsyResponse<SellsyStaff>>() {});
+    }
+
+    /**
+     * Crée une facture dans Sellsy.
+     * @param invoice Les données de la facture.
+     * @return Un Mono contenant la facture créée.
+     */
+    public Mono<SellsyInvoice> createInvoice(SellsyInvoiceRequest invoice) {
+        return sellsyWebClient.post()
+                .uri("/invoices")
+                .headers(headers -> headers.setBearerAuth(authService.getAccessToken()))
+                .bodyValue(invoice)
+                .retrieve()
+                .bodyToMono(SellsyInvoice.class);
     }
 
     /**

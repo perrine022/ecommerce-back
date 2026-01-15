@@ -1,6 +1,8 @@
 package com.tradeall.tradefood.service;
 
 import com.tradeall.tradefood.client.SellsyClient;
+import com.tradeall.tradefood.dto.sellsy.SellsyInvoice;
+import com.tradeall.tradefood.dto.sellsy.SellsyInvoiceRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrder;
 import com.tradeall.tradefood.dto.sellsy.SellsyOrderRequest;
 import com.tradeall.tradefood.dto.sellsy.SellsyPaymentRequest;
@@ -274,20 +276,56 @@ public class OrderService {
                 order.setNumber(response.getNumber());
                 orderRepository.save(order);
                 
-                // Gérer le paiement Sellsy
-                // Le endpoint de liaison nécessite un documentId (Invoice identifier)
-                // Dans la réponse SellsyOrder, on cherche s'il y a un document lié de type invoice
-                Long targetDocumentId = response.getId(); // Par défaut on garde l'id de la commande
-                if (response.getRelated() != null) {
-                    for (SellsyOrder.SellsyRelated rel : response.getRelated()) {
-                        log.info("Document lié à la commande Sellsy {}: ID {}, Type {}", response.getId(), rel.getId(), rel.getType());
-                        if ("invoice".equalsIgnoreCase(rel.getType())) {
-                            targetDocumentId = rel.getId();
-                            log.info("Facture Sellsy identifiée pour liaison du paiement: ID {}", targetDocumentId);
-                        }
+                // On récupère l'administrateur pour l'owner_id de la facture
+                // L'utilisateur demande maintenant d'utiliser l'id fixe 579469
+                Long adminSellsyId = 579469L;
+
+                // Création de la facture Sellsy
+                SellsyInvoiceRequest invoiceRequest = new SellsyInvoiceRequest();
+                invoiceRequest.setNumber(java.util.UUID.randomUUID().toString());
+                invoiceRequest.setSubject("Facture pour Commande Tradefood #" + order.getId());
+                
+                String currentDate = java.time.LocalDate.now().toString();
+                String now = java.time.OffsetDateTime.now().toString();
+                
+                invoiceRequest.setDate(currentDate);
+                invoiceRequest.setDue_date(currentDate);
+                invoiceRequest.setCreated(now);
+                invoiceRequest.setShipping_date(currentDate);
+                
+                invoiceRequest.setOrder_reference(response.getNumber());
+                invoiceRequest.setCurrency("EUR");
+                invoiceRequest.setVat_mode("debit");
+                invoiceRequest.setPublic_link_enabled(true);
+                invoiceRequest.setNote("Généré automatiquement par Tradefood");
+
+                invoiceRequest.setOwner_id(adminSellsyId);
+                invoiceRequest.setAssigned_staff_id(adminSellsyId);
+                
+                // Bank account et Payment methods (Stripe)
+                invoiceRequest.setBank_account_id(1L); // Valeur par défaut de l'exemple
+
+                // Récupération dynamique de la méthode de paiement "stripe"
+                sellsyClient.getPaymentMethods().subscribe(
+                    methodsResponse -> {
+                        Long methodId = methodsResponse.getData().stream()
+                                .filter(m -> "stripe".equalsIgnoreCase(m.getLabel()))
+                                .map(SellsyPaymentMethod::getId)
+                                .findFirst()
+                                .orElse(7L);
+                        invoiceRequest.setPayment_method_ids(Collections.singletonList(methodId));
+                        
+                        log.info("Méthode de paiement 'stripe' ajoutée à la facture avec l'ID: {}", methodId);
+                        
+                        // Envoi de la requête une fois les IDs récupérés
+                        createSellsyInvoice(order, invoiceRequest);
+                    },
+                    error -> {
+                        log.warn("Impossible de récupérer les méthodes de paiement, utilisation de la valeur par défaut 7L. Erreur: {}", error.getMessage());
+                        invoiceRequest.setPayment_method_ids(Collections.singletonList(7L));
+                        createSellsyInvoice(order, invoiceRequest);
                     }
-                }
-                handleSellsyPayment(order, targetDocumentId, Double.parseDouble(response.getAmounts().getTotal_excl_tax()));
+                );
             },
             error -> {
                 log.error("Erreur lors de la création de la commande Sellsy pour la commande locale ID: {}. Erreur: {}", order.getId(), error.getMessage());
@@ -300,10 +338,70 @@ public class OrderService {
     }
 
     /**
+     * Gère la création de la facture Sellsy.
+     */
+    private void createSellsyInvoice(Order order, SellsyInvoiceRequest invoiceRequest) {
+        // Related (Company)
+        SellsyInvoiceRequest.SellsyRelated relatedInv = new SellsyInvoiceRequest.SellsyRelated();
+        relatedInv.setId(order.getUser().getSellsyId());
+        relatedInv.setType("company");
+        invoiceRequest.setRelated(Collections.singletonList(relatedInv));
+
+        // Adresses
+        if (order.getInvoicingAddressId() != null) {
+            invoiceRequest.setInvoicing_address_id(order.getInvoicingAddressId());
+        }
+        if (order.getDeliveryAddressId() != null) {
+            invoiceRequest.setDelivery_address_id(order.getDeliveryAddressId());
+        }
+
+        // Lignes de facture (mêmes que la commande)
+        List<SellsyInvoiceRequest.SellsyRowRequest> invoiceRows = order.getItems().stream()
+                .map(item -> {
+                    SellsyInvoiceRequest.SellsyRowRequest row = new SellsyInvoiceRequest.SellsyRowRequest();
+                    row.setType("single");
+                    row.setReference(item.getProduct().getReference());
+                    row.setQuantity(item.getQuantity().toString());
+                    row.setUnit_amount(item.getUnitPrice().toString());
+                    row.setDescription(item.getProduct().getName());
+                    row.setTax_id(item.getProduct().getTaxId() != null ? item.getProduct().getTaxId() : 1L);
+                    row.setUnit_id(item.getProduct().getUnitId());
+                    row.setAccounting_code_id(item.getProduct().getAccountingCodeId());
+                    return row;
+                })
+                .collect(Collectors.toList());
+        invoiceRequest.setRows(invoiceRows);
+
+        // Settings Stripe
+        SellsyInvoiceRequest.SellsySettings invSettings = new SellsyInvoiceRequest.SellsySettings();
+        SellsyInvoiceRequest.SellsyPayments invPayments = new SellsyInvoiceRequest.SellsyPayments();
+        invPayments.setPayment_modules(Collections.singletonList("stripe"));
+        invPayments.setDirect_debit_module("stripe");
+        invSettings.setPayments(invPayments);
+        invSettings.setPdf_display(new SellsyInvoiceRequest.SellsyPdfDisplay());
+        invoiceRequest.setSettings(invSettings);
+
+        sellsyClient.createInvoice(invoiceRequest).subscribe(
+            invoiceResponse -> {
+                log.info("Facture Sellsy créée avec succès pour la commande locale ID: {}. Facture Sellsy ID: {}", order.getId(), invoiceResponse.getId());
+                // On lie le paiement à la facture
+                handleSellsyPayment(order, invoiceResponse.getId(), Double.parseDouble(invoiceResponse.getAmounts().getTotal_excl_tax()));
+            },
+            invError -> {
+                log.error("Erreur lors de la création de la facture Sellsy pour la commande locale ID: {}. Erreur: {}", order.getId(), invError.getMessage());
+                if (invError instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
+                    org.springframework.web.reactive.function.client.WebClientResponseException we = (org.springframework.web.reactive.function.client.WebClientResponseException) invError;
+                    log.error("[SELLSY] Réponse d'erreur (Facture): {}", we.getResponseBodyAsString());
+                }
+            }
+        );
+    }
+
+    /**
      * Gère la création et la liaison du paiement dans Sellsy.
      */
-    private void handleSellsyPayment(Order order, Long sellsyOrderId, Double amount) {
-        log.info("Début de la gestion du paiement Sellsy pour la commande: {}", sellsyOrderId);
+    private void handleSellsyPayment(Order order, Long sellsyInvoiceId, Double amount) {
+        log.info("Début de la gestion du paiement Sellsy pour la facture: {}", sellsyInvoiceId);
         
         // Recherche d'un paiement Stripe récent pour cet utilisateur
         List<Payment> userPayments = paymentRepository.findByUserId(order.getUser().getId());
@@ -353,7 +451,7 @@ public class OrderService {
                 return sellsyClient.createPaymentForCompany(sellsyUserId, paymentRequest);
             }
         }).flatMap(paymentResponse -> {
-            log.info("Paiement Sellsy créé avec succès. ID: {}. Liaison à la facture: {}", paymentResponse.getId(), sellsyOrderId);
+            log.info("Paiement Sellsy créé avec succès. ID: {}. Liaison à la facture: {}", paymentResponse.getId(), sellsyInvoiceId);
             
             // Récupération de la liste des factures avant la liaison (demande utilisateur)
             return sellsyClient.getInvoices(50, 0)
@@ -369,12 +467,12 @@ public class OrderService {
                 .flatMap(invoicesResponse -> {
                     SellsyLinkPaymentRequest linkRequest = new SellsyLinkPaymentRequest();
                     linkRequest.setAmount(amount);
-                    return sellsyClient.linkPaymentToInvoice(sellsyOrderId, paymentResponse.getId(), linkRequest);
+                    return sellsyClient.linkPaymentToInvoice(sellsyInvoiceId, paymentResponse.getId(), linkRequest);
                 });
         }).subscribe(
-            success -> log.info("Paiement lié avec succès à la facture Sellsy ID: {}", sellsyOrderId),
+            success -> log.info("Paiement lié avec succès à la facture Sellsy ID: {}", sellsyInvoiceId),
             error -> {
-                log.error("Erreur lors de la gestion du paiement Sellsy pour la commande {}: {}", sellsyOrderId, error.getMessage());
+                log.error("Erreur lors de la gestion du paiement Sellsy pour la facture {}: {}", sellsyInvoiceId, error.getMessage());
                 if (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException) {
                     org.springframework.web.reactive.function.client.WebClientResponseException we = (org.springframework.web.reactive.function.client.WebClientResponseException) error;
                     log.error("[SELLSY] Réponse d'erreur (Paiement/Liaison): {}", we.getResponseBodyAsString());
