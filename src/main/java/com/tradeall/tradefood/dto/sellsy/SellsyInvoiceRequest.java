@@ -24,6 +24,7 @@ public class SellsyInvoiceRequest {
     private String note;
     private String shipping_date;
     private String shipping_volume;
+    private SellsyShippingWeight shipping_weight;
     private String vat_mode;
     private String vat_mention;
     private Long bank_account_id;
@@ -57,6 +58,18 @@ public class SellsyInvoiceRequest {
     }
 
     @Data
+    public static class SellsyShippingWeight {
+        private String value;
+        private String unit;
+
+        public SellsyShippingWeight() {}
+        public SellsyShippingWeight(String value, String unit) {
+            this.value = value;
+            this.unit = unit;
+        }
+    }
+
+    @Data
     public static class SellsySettings {
         private SellsyPayments payments;
         private SellsyPdfDisplay pdf_display;
@@ -71,27 +84,27 @@ public class SellsyInvoiceRequest {
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SellsyPdfDisplay {
-        private Boolean show_vat_mention;
-        private Boolean show_bank_account;
-        private Boolean show_check_label;
-        private Boolean show_contact_name;
-        private Boolean show_siret;
-        private Boolean show_siren;
-        private Boolean show_vat_number;
-        private Boolean show_company_reference;
-        private Boolean show_payment_methods;
-        private Boolean show_payment_terms;
-        private Boolean show_payment_deadlines;
-        private Boolean show_company_phone_number;
-        private Boolean show_delivery_address;
-        private Boolean show_barcode_values;
-        private Boolean show_barcode_images;
-        private Boolean show_reference_column;
-        private Boolean show_quantity_column;
-        private Boolean show_image_column;
-        private Boolean show_unit_cost_column;
-        private Boolean show_amount_column;
-        private Boolean show_taxes_column;
-        private Boolean show_discount_column;
+        private Boolean show_vat_mention = true;
+        private Boolean show_bank_account = true;
+        private Boolean show_check_label = true;
+        private Boolean show_contact_name = true;
+        private Boolean show_siret = true;
+        private Boolean show_siren = true;
+        private Boolean show_vat_number = true;
+        private Boolean show_company_reference = true;
+        private Boolean show_payment_methods = true;
+        private Boolean show_payment_terms = true;
+        private Boolean show_payment_deadlines = true;
+        private Boolean show_company_phone_number = true;
+        private Boolean show_delivery_address = true;
+        private Boolean show_barcode_values = true;
+        private Boolean show_barcode_images = true;
+        private Boolean show_reference_column = true;
+        private Boolean show_quantity_column = true;
+        private Boolean show_image_column = true;
+        private Boolean show_unit_cost_column = true;
+        private Boolean show_amount_column = true;
+        private Boolean show_taxes_column = true;
+        private Boolean show_discount_column = true;
     }
 }

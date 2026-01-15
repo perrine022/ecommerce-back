@@ -242,6 +242,9 @@ public class OrderService {
         if (order.getDeliveryAddressId() != null) {
             sellsyOrder.setDelivery_address_id(order.getDeliveryAddressId());
         }
+        if (order.getIssuerAddressId() != null) {
+            sellsyOrder.setIssuer_address_id(order.getIssuerAddressId());
+        }
 
         log.debug("Préparation des lignes de commande pour Sellsy");
         List<SellsyOrderRequest.SellsyRowRequest> rows = order.getItems().stream()
@@ -292,6 +295,8 @@ public class OrderService {
                 invoiceRequest.setDue_date(currentDate);
                 invoiceRequest.setCreated(now);
                 invoiceRequest.setShipping_date(currentDate);
+                invoiceRequest.setShipping_volume("1");
+                invoiceRequest.setShipping_weight(new SellsyInvoiceRequest.SellsyShippingWeight("1", "kg"));
                 
                 invoiceRequest.setOrder_reference(response.getNumber());
                 invoiceRequest.setCurrency("EUR");
@@ -304,6 +309,17 @@ public class OrderService {
                 
                 // Bank account et Payment methods (Stripe)
                 invoiceRequest.setBank_account_id(1L); // Valeur par défaut de l'exemple
+
+                // Ajout des adresses (identiques à la commande)
+                if (order.getInvoicingAddressId() != null) {
+                    invoiceRequest.setInvoicing_address_id(order.getInvoicingAddressId());
+                }
+                if (order.getDeliveryAddressId() != null) {
+                    invoiceRequest.setDelivery_address_id(order.getDeliveryAddressId());
+                }
+                if (order.getDeliveryAddressId() != null) {
+                    invoiceRequest.setIssuer_address_id(order.getDeliveryAddressId());
+                }
 
                 // Récupération dynamique de la méthode de paiement "stripe"
                 sellsyClient.getPaymentMethods().subscribe(
@@ -366,6 +382,7 @@ public class OrderService {
                     row.setDescription(item.getProduct().getName());
                     row.setTax_id(item.getProduct().getTaxId() != null ? item.getProduct().getTaxId() : 1L);
                     row.setUnit_id(item.getProduct().getUnitId());
+                    row.setPurchase_amount(item.getProduct().getPurchaseAmount());
                     row.setAccounting_code_id(item.getProduct().getAccountingCodeId());
                     return row;
                 })
@@ -378,8 +395,19 @@ public class OrderService {
         invPayments.setPayment_modules(Collections.singletonList("stripe"));
         invPayments.setDirect_debit_module("stripe");
         invSettings.setPayments(invPayments);
-        invSettings.setPdf_display(new SellsyInvoiceRequest.SellsyPdfDisplay());
+        
+        // Configuration de l'affichage PDF avec tous les champs à true par défaut
+        SellsyInvoiceRequest.SellsyPdfDisplay pdfDisplay = new SellsyInvoiceRequest.SellsyPdfDisplay();
+        invSettings.setPdf_display(pdfDisplay);
+        
         invoiceRequest.setSettings(invSettings);
+
+        try {
+            String jsonInvoice = sellsyClient.serializeToJson(invoiceRequest);
+            log.info("[SELLSY] Payload Facture envoyé pour la commande locale {}: {}", order.getId(), jsonInvoice);
+        } catch (Exception e) {
+            log.warn("[SELLSY] Impossible de sérialiser le payload facture pour les logs: {}", e.getMessage());
+        }
 
         sellsyClient.createInvoice(invoiceRequest).subscribe(
             invoiceResponse -> {
