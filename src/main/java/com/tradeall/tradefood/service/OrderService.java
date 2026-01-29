@@ -1,5 +1,6 @@
 package com.tradeall.tradefood.service;
 
+import com.stripe.model.Invoice;
 import com.tradeall.tradefood.client.SellsyClient;
 import com.tradeall.tradefood.dto.sellsy.SellsyInvoice;
 import com.tradeall.tradefood.dto.sellsy.SellsyInvoiceRequest;
@@ -317,9 +318,9 @@ public class OrderService {
                 if (order.getDeliveryAddressId() != null) {
                     invoiceRequest.setDelivery_address_id(order.getDeliveryAddressId());
                 }
-                if (order.getDeliveryAddressId() != null) {
-                    invoiceRequest.setIssuer_address_id(order.getDeliveryAddressId());
-                }
+
+                // Discount par défaut comme dans le payload exemple
+                invoiceRequest.setDiscount(new SellsyInvoiceRequest.SellsyDiscount("percent", "0.00"));
 
                 // Récupération dynamique de la méthode de paiement "stripe"
                 sellsyClient.getPaymentMethods().subscribe(
@@ -384,6 +385,7 @@ public class OrderService {
                     row.setUnit_id(item.getProduct().getUnitId());
                     row.setPurchase_amount(item.getProduct().getPurchaseAmount());
                     row.setAccounting_code_id(item.getProduct().getAccountingCodeId());
+                    row.setDiscount(null);
                     return row;
                 })
                 .collect(Collectors.toList());
@@ -401,6 +403,10 @@ public class OrderService {
         invSettings.setPdf_display(pdfDisplay);
         
         invoiceRequest.setSettings(invSettings);
+        SellsyInvoiceRequest.SellsyParent parent = new SellsyInvoiceRequest.SellsyParent();
+        parent.setType("order");
+        parent.setId(Long.valueOf(order.getSellsyOrderId()));
+        invoiceRequest.setParent(parent);
 
         try {
             String jsonInvoice = sellsyClient.serializeToJson(invoiceRequest);

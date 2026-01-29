@@ -14,13 +14,14 @@ public class SellsyInvoiceRequest {
     private String subject;
     private String currency;
     private List<SellsyRelated> related;
+    private SellsyParent parent;
+    private SellsyDiscount discount;
     private Boolean public_link_enabled;
     private Long assigned_staff_id;
     private Long owner_id;
     private String order_reference;
     private Long invoicing_address_id;
     private Long delivery_address_id;
-    private Long issuer_address_id;
     private String note;
     private String shipping_date;
     private String shipping_volume;
@@ -31,6 +32,30 @@ public class SellsyInvoiceRequest {
     private List<Long> payment_method_ids;
     private List<SellsyRowRequest> rows;
     private SellsySettings settings;
+
+    @Data
+    public static class SellsyParent {
+        private String type;
+        private Long id;
+
+        public SellsyParent() {}
+        public SellsyParent(String type, Long id) {
+            this.type = type;
+            this.id = id;
+        }
+    }
+
+    @Data
+    public static class SellsyDiscount {
+        private String type;
+        private String value;
+
+        public SellsyDiscount() {}
+        public SellsyDiscount(String type, String value) {
+            this.type = type;
+            this.value = value;
+        }
+    }
 
     @Data
     public static class SellsyRelated {
@@ -55,6 +80,7 @@ public class SellsyInvoiceRequest {
         private String reference;
         private String description;
         private Long accounting_code_id;
+        private SellsyDiscount discount;
     }
 
     @Data
